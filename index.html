@@ -27,7 +27,7 @@
 
         .menu-panel {
             background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px;
-            padding: 1.5rem 2rem; width: 95%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            padding: 1.5rem 2rem; width: 95%; max-width: 460px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             margin: auto; max-height: 95vh; overflow-y: auto;
         }
 
@@ -103,9 +103,7 @@
         .indicator-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
         .flash-correct { background-color: rgba(48, 209, 88, 0.2); border-color: var(--success); transform: scale(1.05); }
-        .flash-correct .indicator-key { color: var(--success); border-color: var(--success); }
         .flash-wrong { background-color: rgba(255, 69, 58, 0.2); border-color: var(--danger); transform: scale(1.05); }
-        .flash-wrong .indicator-key { color: var(--danger); border-color: var(--danger); }
         .flash-neutral { background-color: rgba(255, 255, 255, 0.1); border-color: #8e8e93; transform: scale(1.05); }
         .flash-neutral .indicator-key { color: #8e8e93; border-color: #8e8e93; }
 
@@ -148,6 +146,14 @@
                 </select>
             </div>
 
+            <div class="settings-group" id="group-voice" style="display:none;">
+                <label>Audio Voice</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="voice-select" style="flex: 1;"></select>
+                    <button type="button" id="test-voice-btn" class="bind-btn">Test</button>
+                </div>
+            </div>
+
             <div class="settings-group">
                 <label>Keybindings (Click to Rebind)</label>
                 <div class="keybind-container">
@@ -168,7 +174,6 @@
 
             <div class="settings-group checkbox-group" style="margin-top: 10px;">
                 <label class="checkbox-container">
-                    <!-- Default to checked so miss flashes actually happen out of the gate -->
                     <input type="checkbox" id="feedback" checked>
                     <span class="checkmark"></span>
                     Enable Instant Visual Feedback
@@ -211,13 +216,12 @@
         const STIMULUS_DURATION = 1500;
         const ISI = 1000; 
 
-        // Make sure your local folder has these exact file names
         const FACES = [
             'assets/faces/face_0.jpg', 'assets/faces/face_1.jpg', 'assets/faces/face_2.jpg', 
             'assets/faces/face_3.jpg', 'assets/faces/face_4.jpg', 'assets/faces/face_5.jpg',
             'assets/faces/face_6.jpg', 'assets/faces/face_7.jpg', 'assets/faces/face_8.jpg', 'assets/faces/face_9.jpg'
         ];
-        const WORDS = ['Murder', 'Rape', 'Suicide', 'Weak', 'Genocide', 'Useless', 'Glory', 'Victory', 'Love', 'Miracle', 'Money', 'Happy'];
+        const WORDS = ['Murder', 'Agony', 'Despair', 'Panic', 'Slaughter', 'Grief', 'Glory', 'Triumph', 'Bliss', 'Miracle', 'Wealth', 'Ecstasy'];
         const COLORS = ['#FF453A', '#30D158', '#0A84FF', '#FFD60A', '#BF5AF2', '#FF9F0A'];
 
         // DOM Elements
@@ -230,6 +234,8 @@
         const inputBar = document.getElementById('input-bar');
         const interBlockMsg = document.getElementById('inter-block-msg');
         const preloadContainer = document.getElementById('preload-container');
+        const voiceSelect = document.getElementById('voice-select');
+        const testVoiceBtn = document.getElementById('test-voice-btn');
 
         // State Variables
         let n, mode, gridSize, currentBlockTrials, trials = [], currentTrial = 0, sessionInterval, totalTrialsPlayed = 0;
@@ -237,11 +243,52 @@
         let responses = { pos: [], col: [], aud: [] };
         let globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
         let isRunning = false;
-        let isTrialActive = false; // Strictly blocks inputs during gaps/pre-start
+        let isTrialActive = false;
+        let availableVoices = [];
 
         // Keybindings Setup
         let keys = { pos: 'ArrowLeft', col: 'ArrowUp', aud: 'ArrowRight' };
         let listeningForBind = null;
+
+        function populateVoices() {
+            if (typeof speechSynthesis === 'undefined') return;
+            
+            const rawVoices = window.speechSynthesis.getVoices();
+            availableVoices = rawVoices.filter(v => v.lang.startsWith('en'));
+            if (availableVoices.length === 0) availableVoices = rawVoices;
+
+            voiceSelect.innerHTML = '';
+            availableVoices.forEach((v, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = `${v.name} (${v.lang})`;
+                
+                // Favor natural/enhanced high quality English voices
+                if (v.default || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Natural')) {
+                    opt.selected = true;
+                }
+                voiceSelect.appendChild(opt);
+            });
+        }
+
+        if (typeof speechSynthesis !== 'undefined') {
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoices;
+            }
+            populateVoices();
+        }
+
+        testVoiceBtn.addEventListener('click', () => {
+            window.speechSynthesis.cancel();
+            const idx = voiceSelect.value;
+            if (availableVoices[idx]) {
+                const msg = new SpeechSynthesisUtterance('Triumph');
+                msg.voice = availableVoices[idx];
+                msg.lang = availableVoices[idx].lang || 'en-US';
+                msg.rate = 1.1;
+                window.speechSynthesis.speak(msg);
+            }
+        });
 
         function formatKey(key) {
             if(key === ' ') return 'Space';
@@ -257,10 +304,12 @@
             const m = inputs.mode.value;
             document.getElementById('row-col').style.display = (m === 'pos_col' || m === 'all') ? 'flex' : 'none';
             document.getElementById('row-aud').style.display = (m === 'pos_aud' || m === 'all') ? 'flex' : 'none';
+            document.getElementById('group-voice').style.display = (m === 'pos_aud' || m === 'all') ? 'flex' : 'none';
         }
 
         document.querySelectorAll('.bind-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                if (e.target.id === 'test-voice-btn') return;
                 if(listeningForBind) {
                     document.getElementById(`bind-${listeningForBind}`).classList.remove('listening');
                     updateKeybindUI();
@@ -282,7 +331,6 @@
                 return;
             }
 
-            // Reject input if game isn't actively displaying a trial
             if (!screens.game.classList.contains('active') || !isRunning || !isTrialActive || currentTrial >= currentBlockTrials) return;
             
             if (e.key === keys.pos && !responses.pos[currentTrial]) processFeedback('pos');
@@ -367,7 +415,6 @@
         }
 
         function finalizeStart() {
-            // Force keyboard focus off the button to prevent accidental re-triggers via Spacebar
             if(document.activeElement) document.activeElement.blur();
 
             gridSize = parseInt(inputs.grid.value);
@@ -408,7 +455,7 @@
             clearGrid();
             gridContainer.style.display = 'none';
             interBlockMsg.style.display = 'block';
-            isTrialActive = false; // Block pre-emptive typing
+            isTrialActive = false;
 
             sessionInterval = setTimeout(() => {
                 if(!isRunning) return;
@@ -452,7 +499,7 @@
             const indicator = document.getElementById(`ind-${type}`);
             if(indicator) {
                 indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral');
-                void indicator.offsetWidth; // Force CSS reflow
+                void indicator.offsetWidth;
                 
                 if (status === true) indicator.classList.add('flash-correct');
                 else if (status === false) indicator.classList.add('flash-wrong');
@@ -477,7 +524,7 @@
             
             clearGrid();
             totalTrialsPlayed++;
-            isTrialActive = true; // Trial starts, begin accepting inputs
+            isTrialActive = true;
             
             const trial = trials[currentTrial];
             const wrapper = gridContainer.children[trial.pos];
@@ -494,20 +541,25 @@
             if(mode === 'pos_aud' || mode === 'all') {
                 window.speechSynthesis.cancel();
                 const msg = new SpeechSynthesisUtterance(trial.audWord);
-                msg.rate = 1.2;
+                const idx = voiceSelect.value;
+                if (availableVoices[idx]) {
+                    msg.voice = availableVoices[idx];
+                    msg.lang = availableVoices[idx].lang || 'en-US';
+                } else {
+                    msg.lang = 'en-US';
+                }
+                msg.rate = 1.1;
                 window.speechSynthesis.speak(msg);
             }
 
-            // The full response window is STIMULUS_DURATION + ISI
             sessionInterval = setTimeout(() => {
                 if(!isRunning) return;
                 
-                clearGrid(); // Hide visual stimulus
+                clearGrid();
                 
                 sessionInterval = setTimeout(() => {
                     if(!isRunning) return;
                     
-                    // Miss Detection evaluates exactly as the time window closes
                     if(inputs.feedback.checked && currentTrial >= n) {
                         const activeTypes = ['pos'];
                         if(mode === 'pos_col' || mode === 'all') activeTypes.push('col');
@@ -517,7 +569,6 @@
                             const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
                             const responded = responses[type][currentTrial];
                             
-                            // It was a target, and they didn't press the key in time
                             if (isTarget && !responded) {
                                 flashIndicator(type, false);
                             }
@@ -541,13 +592,12 @@
             responses[type][currentTrial] = true;
             
             if(!inputs.feedback.checked || currentTrial < n) {
-                // Flash neutral just to acknowledge the keystroke was physically received
                 flashIndicator(type, 'neutral');
                 return; 
             }
             
             const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
-            flashIndicator(type, isTarget); // Flashes green for hit, red for False Alarm
+            flashIndicator(type, isTarget);
         }
 
         function calculateBlockAccuracy() {
