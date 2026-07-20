@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affective N-Back</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d; 
+            --panel-color: #1a1a1a;
+            --border-color: #333333;
+            --text-color: #f5f5f7;
+            --text-muted: #8e8e93;
+            --circle-bg: #262626;
+            --highlight: #0a84ff;
+            --highlight-hover: #0070e6;
+            --danger: #ff453a;
+            --success: #30d158;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; }
+
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        .menu-panel {
+            background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 1.5rem 2rem; width: 95%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            margin: auto; max-height: 95vh; overflow-y: auto;
+        }
+
+        h1 { text-align: center; margin-bottom: 1.2rem; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+        h2 { font-size: 1.5rem; margin-bottom: 1.2rem; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .settings-group { margin-bottom: 1rem; display: flex; flex-direction: column; }
+        .settings-group label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.4rem; }
+
+        select, input[type="number"] {
+            width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);
+            background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none; transition: border 0.2s;
+        }
+        select:focus, input:focus { border-color: var(--highlight); }
+
+        .keybind-container { background: var(--bg-color); border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; }
+        .keybind-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border-color); }
+        .keybind-row:last-child { border-bottom: none; }
+        .keybind-row span { font-size: 0.9rem; font-weight: 500; }
+        .bind-btn { background: var(--panel-color); border: 1px solid var(--border-color); padding: 0.4rem 0.8rem; border-radius: 4px; color: var(--text-color); font-size: 0.85rem; margin-top: 0; width: auto; font-family: monospace; cursor: pointer; }
+        .bind-btn.listening { border-color: var(--highlight); color: var(--highlight); animation: pulse 1s infinite alternate; }
+
+        @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+        .checkbox-container { display: flex; align-items: center; cursor: pointer; font-size: 0.9rem; color: var(--text-color); font-weight: 500; }
+        .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
+        .checkmark { height: 18px; width: 18px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; margin-right: 10px; display: flex; align-items: center; justify-content: center; }
+        .checkbox-container:hover input ~ .checkmark { border-color: var(--highlight); }
+        .checkbox-container input:checked ~ .checkmark { background-color: var(--highlight); border-color: var(--highlight); }
+        .checkmark:after { content: ""; display: none; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+        .checkbox-container input:checked ~ .checkmark:after { display: block; }
+
+        button#start-btn { width: 100%; padding: 0.9rem; border: none; border-radius: 8px; background: var(--highlight); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: all 0.2s; }
+        button#start-btn:hover:not(:disabled) { background: var(--highlight-hover); }
+        button#start-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        #end-session-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin-top: 0; border-radius: 6px; cursor: pointer;}
+        #end-session-btn:hover { background: rgba(255, 69, 58, 0.1); }
+
+        .hud { height: 60px; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--panel-color); flex-shrink: 0; }
+        .stats-left { display: flex; align-items: baseline; }
+        #n-display { font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
+
+        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 15px; overflow: hidden; min-height: 0; }
+        
+        #inter-block-msg { font-size: 1.5rem; font-weight: bold; color: var(--highlight); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; }
+        
+        .grid-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; padding-bottom: 15px; min-height: 0; position: relative; }
+
+        #grid-container {
+            display: grid; gap: 15px; width: 100%; height: 100%;
+            max-width: min(70vh, 800px); max-height: min(70vh, 800px); aspect-ratio: 1 / 1;
+        }
+
+        .grid-cell-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100%; height: 100%; }
+
+        .circle { 
+            width: 70%; aspect-ratio: 1; border-radius: 50%; background: var(--circle-bg); 
+            display: flex; align-items: center; justify-content: center; position: relative; 
+            border: 3px solid transparent; overflow: hidden;
+        }
+        .face-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+        .word-stimulus { margin-top: 8%; font-size: clamp(0.9rem, 2vmin, 1.5rem); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; text-shadow: 0px 2px 4px rgba(0,0,0,1); text-align: center; }
+
+        .input-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 800px; flex-shrink: 0; padding: 5px; }
+        .input-indicator { 
+            flex: 1; min-width: 80px; background: var(--panel-color); border: 2px solid var(--border-color); border-radius: 8px;
+            padding: 10px 5px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .indicator-key { font-family: monospace; font-size: clamp(0.9rem, 1.5vw, 1.1rem); font-weight: bold; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); }
+        .indicator-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+        .flash-correct { background-color: rgba(48, 209, 88, 0.2); border-color: var(--success); transform: scale(1.05); }
+        .flash-correct .indicator-key { color: var(--success); border-color: var(--success); }
+        .flash-wrong { background-color: rgba(255, 69, 58, 0.2); border-color: var(--danger); transform: scale(1.05); }
+        .flash-wrong .indicator-key { color: var(--danger); border-color: var(--danger); }
+        .flash-neutral { background-color: rgba(255, 255, 255, 0.1); border-color: #8e8e93; transform: scale(1.05); }
+        .flash-neutral .indicator-key { color: #8e8e93; border-color: #8e8e93; }
+
+        .text-center { text-align: center; }
+        #results-text p { margin-bottom: 0.8rem; font-size: 1.1rem; color: var(--text-muted); }
+        #results-text strong { color: var(--text-color); font-size: 1.3rem; }
+        .stat-highlight { color: var(--highlight); font-weight: 700; font-size: 1.5rem !important; display: block; margin-top: 5px; }
+        
+        #preload-container { display: none; }
+    </style>
+</head>
+<body>
+    <div id="preload-container"></div>
+
+    <div id="setup-screen" class="screen active">
+        <div class="menu-panel">
+            <h1>Affective N-Back</h1>
+            
+            <div class="settings-grid">
+                <div class="settings-group">
+                    <label>Grid Size</label>
+                    <select id="grid-size">
+                        <option value="3">3 x 3</option>
+                        <option value="4">4 x 4</option>
+                    </select>
+                </div>
+
+                <div class="settings-group">
+                    <label>Starting N-Level</label>
+                    <input type="number" id="n-level" min="1" value="2">
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label>Stimuli Mode</label>
+                <select id="mode">
+                    <option value="pos_col">Position + Color</option>
+                    <option value="pos_aud">Position + Audio</option>
+                    <option value="all">Position + Color + Audio</option>
+                </select>
+            </div>
+
+            <div class="settings-group">
+                <label>Keybindings (Click to Rebind)</label>
+                <div class="keybind-container">
+                    <div class="keybind-row">
+                        <span>Position</span>
+                        <button class="bind-btn" data-type="pos" id="bind-pos">ArrowLeft</button>
+                    </div>
+                    <div class="keybind-row" id="row-col">
+                        <span>Color</span>
+                        <button class="bind-btn" data-type="col" id="bind-col">ArrowUp</button>
+                    </div>
+                    <div class="keybind-row" id="row-aud" style="display:none;">
+                        <span>Audio</span>
+                        <button class="bind-btn" data-type="aud" id="bind-aud">ArrowRight</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group checkbox-group" style="margin-top: 10px;">
+                <label class="checkbox-container">
+                    <!-- Default to checked so miss flashes actually happen out of the gate -->
+                    <input type="checkbox" id="feedback" checked>
+                    <span class="checkmark"></span>
+                    Enable Instant Visual Feedback
+                </label>
+            </div>
+
+            <button id="start-btn">Initialize Session</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="hud">
+            <div class="stats-left">
+                <span id="n-display"></span>
+                <span id="trial-display" style="color: #8e8e93; font-size: 1rem; margin-left: 15px;"></span>
+            </div>
+            <button id="end-session-btn">End Session</button>
+        </div>
+        
+        <div class="game-area">
+            <div class="grid-wrapper">
+                <div id="inter-block-msg">Get Ready...</div>
+                <div id="grid-container"></div>
+            </div>
+            
+            <div class="input-bar" id="input-bar"></div>
+        </div>
+    </div>
+
+    <div id="results-screen" class="screen">
+        <div class="menu-panel text-center">
+            <h2>Session Complete</h2>
+            <div id="results-text"></div>
+            <button id="home-btn">Return to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        const STATE_KEY = 'affective_nback_state';
+        const STIMULUS_DURATION = 1500;
+        const ISI = 1000; 
+
+        // Make sure your local folder has these exact file names
+        const FACES = [
+            'assets/faces/face_0.jpg', 'assets/faces/face_1.jpg', 'assets/faces/face_2.jpg', 
+            'assets/faces/face_3.jpg', 'assets/faces/face_4.jpg', 'assets/faces/face_5.jpg',
+            'assets/faces/face_6.jpg', 'assets/faces/face_7.jpg', 'assets/faces/face_8.jpg', 'assets/faces/face_9.jpg'
+        ];
+        const WORDS = ['Murder', 'Rape', 'Suicide', 'Weak', 'Genocide', 'Useless', 'Glory', 'Victory', 'Love', 'Miracle', 'Money', 'Happy'];
+        const COLORS = ['#FF453A', '#30D158', '#0A84FF', '#FFD60A', '#BF5AF2', '#FF9F0A'];
+
+        // DOM Elements
+        const screens = { setup: document.getElementById('setup-screen'), game: document.getElementById('game-screen'), results: document.getElementById('results-screen') };
+        const inputs = { 
+            grid: document.getElementById('grid-size'), mode: document.getElementById('mode'), 
+            n: document.getElementById('n-level'), feedback: document.getElementById('feedback')
+        };
+        const gridContainer = document.getElementById('grid-container');
+        const inputBar = document.getElementById('input-bar');
+        const interBlockMsg = document.getElementById('inter-block-msg');
+        const preloadContainer = document.getElementById('preload-container');
+
+        // State Variables
+        let n, mode, gridSize, currentBlockTrials, trials = [], currentTrial = 0, sessionInterval, totalTrialsPlayed = 0;
+        let highestN = 1;
+        let responses = { pos: [], col: [], aud: [] };
+        let globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
+        let isRunning = false;
+        let isTrialActive = false; // Strictly blocks inputs during gaps/pre-start
+
+        // Keybindings Setup
+        let keys = { pos: 'ArrowLeft', col: 'ArrowUp', aud: 'ArrowRight' };
+        let listeningForBind = null;
+
+        function formatKey(key) {
+            if(key === ' ') return 'Space';
+            if(key.startsWith('Arrow')) return key.replace('Arrow', '') + ' Arr';
+            return key.length === 1 ? key.toUpperCase() : key;
+        }
+
+        function updateKeybindUI() {
+            document.getElementById('bind-pos').innerText = formatKey(keys.pos);
+            document.getElementById('bind-col').innerText = formatKey(keys.col);
+            document.getElementById('bind-aud').innerText = formatKey(keys.aud);
+
+            const m = inputs.mode.value;
+            document.getElementById('row-col').style.display = (m === 'pos_col' || m === 'all') ? 'flex' : 'none';
+            document.getElementById('row-aud').style.display = (m === 'pos_aud' || m === 'all') ? 'flex' : 'none';
+        }
+
+        document.querySelectorAll('.bind-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if(listeningForBind) {
+                    document.getElementById(`bind-${listeningForBind}`).classList.remove('listening');
+                    updateKeybindUI();
+                }
+                listeningForBind = e.target.dataset.type;
+                e.target.innerText = 'Press Key...';
+                e.target.classList.add('listening');
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (listeningForBind) {
+                e.preventDefault();
+                keys[listeningForBind] = e.key;
+                document.getElementById(`bind-${listeningForBind}`).classList.remove('listening');
+                listeningForBind = null;
+                updateKeybindUI();
+                saveSettings();
+                return;
+            }
+
+            // Reject input if game isn't actively displaying a trial
+            if (!screens.game.classList.contains('active') || !isRunning || !isTrialActive || currentTrial >= currentBlockTrials) return;
+            
+            if (e.key === keys.pos && !responses.pos[currentTrial]) processFeedback('pos');
+            if (e.key === keys.col && (mode === 'pos_col' || mode === 'all') && !responses.col[currentTrial]) processFeedback('col');
+            if (e.key === keys.aud && (mode === 'pos_aud' || mode === 'all') && !responses.aud[currentTrial]) processFeedback('aud');
+        });
+
+        inputs.mode.addEventListener('change', updateKeybindUI);
+
+        function loadSettings() {
+            const saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+            if(saved.grid) inputs.grid.value = saved.grid;
+            if(saved.mode) inputs.mode.value = saved.mode;
+            if(saved.n) inputs.n.value = saved.n;
+            if(saved.feedback !== undefined) inputs.feedback.checked = saved.feedback;
+            if(saved.keys) keys = saved.keys;
+            updateKeybindUI();
+        }
+
+        function saveSettings() {
+            localStorage.setItem(STATE_KEY, JSON.stringify({ 
+                grid: inputs.grid.value, mode: inputs.mode.value, 
+                n: inputs.n.value, feedback: inputs.feedback.checked, keys: keys
+            }));
+        }
+
+        function buildInputBar() {
+            inputBar.innerHTML = '';
+            const addIndicator = (type, label, key) => {
+                inputBar.innerHTML += `
+                    <div class="input-indicator" id="ind-${type}">
+                        <span class="indicator-key">${formatKey(key)}</span>
+                        <span class="indicator-label">${label}</span>
+                    </div>
+                `;
+            };
+
+            addIndicator('pos', 'Position', keys.pos);
+            if(mode === 'pos_col' || mode === 'all') addIndicator('col', 'Color', keys.col);
+            if(mode === 'pos_aud' || mode === 'all') addIndicator('aud', 'Audio', keys.aud);
+        }
+
+        function setupGrid() {
+            gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            gridContainer.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+            gridContainer.innerHTML = '';
+            for(let i=0; i<gridSize*gridSize; i++) {
+                gridContainer.innerHTML += `
+                    <div class="grid-cell-wrapper">
+                        <div class="circle"></div>
+                        <div class="word-stimulus"></div>
+                    </div>`;
+            }
+        }
+
+        function startSession() {
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "Loading Stimuli...";
+            btn.disabled = true;
+
+            let loadedCount = 0;
+            preloadContainer.innerHTML = ''; 
+            
+            if (FACES.length === 0) return finalizeStart(); 
+
+            FACES.forEach(src => {
+                const img = new Image();
+                img.onload = () => handlePreloadDone();
+                img.onerror = () => handlePreloadDone();
+                img.src = src;
+                preloadContainer.appendChild(img);
+            });
+
+            function handlePreloadDone() {
+                loadedCount++;
+                if(loadedCount === FACES.length) {
+                    btn.innerText = "Initialize Session";
+                    btn.disabled = false;
+                    finalizeStart();
+                }
+            }
+        }
+
+        function finalizeStart() {
+            // Force keyboard focus off the button to prevent accidental re-triggers via Spacebar
+            if(document.activeElement) document.activeElement.blur();
+
+            gridSize = parseInt(inputs.grid.value);
+            mode = inputs.mode.value;
+            n = parseInt(inputs.n.value);
+            highestN = n;
+            saveSettings();
+
+            window.speechSynthesis.cancel();
+            let silentMsg = new SpeechSynthesisUtterance('');
+            silentMsg.volume = 0;
+            window.speechSynthesis.speak(silentMsg);
+
+            globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
+            totalTrialsPlayed = 0;
+            isRunning = true;
+            isTrialActive = false;
+            
+            setupGrid();
+            buildInputBar();
+            switchScreen('game');
+            startNewBlock();
+        }
+
+        function startNewBlock() {
+            currentBlockTrials = 20 + (n * n); 
+            generateTrials();
+            currentTrial = 0;
+            responses = { 
+                pos: Array(currentBlockTrials).fill(false), 
+                col: Array(currentBlockTrials).fill(false), 
+                aud: Array(currentBlockTrials).fill(false) 
+            };
+            
+            document.getElementById('n-display').innerText = `${n}-Back Level`;
+            document.getElementById('trial-display').innerText = `(Trial 1/${currentBlockTrials})`;
+            
+            clearGrid();
+            gridContainer.style.display = 'none';
+            interBlockMsg.style.display = 'block';
+            isTrialActive = false; // Block pre-emptive typing
+
+            sessionInterval = setTimeout(() => {
+                if(!isRunning) return;
+                interBlockMsg.style.display = 'none';
+                gridContainer.style.display = 'grid';
+                runTrial();
+            }, 2000); 
+        }
+
+        function generateSequence(targetCount) {
+            let seq = [];
+            for(let i=0; i<currentBlockTrials; i++) {
+                if(i >= n && Math.random() < 0.3) {
+                    seq.push(seq[i-n]); 
+                } else {
+                    let val;
+                    do { val = Math.floor(Math.random() * targetCount); } while (i >= n && val === seq[i-n]);
+                    seq.push(val);
+                }
+            }
+            return seq;
+        }
+
+        function generateTrials() {
+            const posSeq = generateSequence(gridSize * gridSize);
+            const colSeq = generateSequence(COLORS.length);
+            const audSeq = generateSequence(WORDS.length);
+            const wordSeq = generateSequence(WORDS.length);
+            const faceSeq = generateSequence(FACES.length);
+
+            trials = [];
+            for(let i=0; i<currentBlockTrials; i++) {
+                trials.push({
+                    pos: posSeq[i], col: colSeq[i], aud: audSeq[i],
+                    face: FACES[faceSeq[i]], word: WORDS[wordSeq[i]], audWord: WORDS[audSeq[i]]
+                });
+            }
+        }
+
+        function flashIndicator(type, status) {
+            const indicator = document.getElementById(`ind-${type}`);
+            if(indicator) {
+                indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral');
+                void indicator.offsetWidth; // Force CSS reflow
+                
+                if (status === true) indicator.classList.add('flash-correct');
+                else if (status === false) indicator.classList.add('flash-wrong');
+                else indicator.classList.add('flash-neutral');
+                
+                setTimeout(() => {
+                    indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral');
+                }, 300);
+            }
+        }
+
+        function runTrial() {
+            if(!isRunning) return;
+
+            if(currentTrial >= currentBlockTrials) {
+                evaluateBlock();
+                if(isRunning) startNewBlock();
+                return;
+            }
+
+            document.getElementById('trial-display').innerText = `(Trial ${currentTrial + 1}/${currentBlockTrials})`;
+            
+            clearGrid();
+            totalTrialsPlayed++;
+            isTrialActive = true; // Trial starts, begin accepting inputs
+            
+            const trial = trials[currentTrial];
+            const wrapper = gridContainer.children[trial.pos];
+            const circle = wrapper.querySelector('.circle');
+            const textRow = wrapper.querySelector('.word-stimulus');
+            
+            circle.innerHTML = `<img src="${trial.face}" class="face-img" alt="face" onerror="this.style.display='none'">`;
+
+            if(mode === 'pos_col' || mode === 'all') {
+                textRow.innerText = trial.word;
+                textRow.style.color = COLORS[trial.col];
+            }
+
+            if(mode === 'pos_aud' || mode === 'all') {
+                window.speechSynthesis.cancel();
+                const msg = new SpeechSynthesisUtterance(trial.audWord);
+                msg.rate = 1.2;
+                window.speechSynthesis.speak(msg);
+            }
+
+            // The full response window is STIMULUS_DURATION + ISI
+            sessionInterval = setTimeout(() => {
+                if(!isRunning) return;
+                
+                clearGrid(); // Hide visual stimulus
+                
+                sessionInterval = setTimeout(() => {
+                    if(!isRunning) return;
+                    
+                    // Miss Detection evaluates exactly as the time window closes
+                    if(inputs.feedback.checked && currentTrial >= n) {
+                        const activeTypes = ['pos'];
+                        if(mode === 'pos_col' || mode === 'all') activeTypes.push('col');
+                        if(mode === 'pos_aud' || mode === 'all') activeTypes.push('aud');
+
+                        activeTypes.forEach(type => {
+                            const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
+                            const responded = responses[type][currentTrial];
+                            
+                            // It was a target, and they didn't press the key in time
+                            if (isTarget && !responded) {
+                                flashIndicator(type, false);
+                            }
+                        });
+                    }
+
+                    currentTrial++; 
+                    runTrial();     
+                }, ISI);
+            }, STIMULUS_DURATION);
+        }
+
+        function clearGrid() {
+            Array.from(gridContainer.children).forEach(wrapper => {
+                wrapper.querySelector('.circle').innerHTML = '';
+                wrapper.querySelector('.word-stimulus').innerText = '';
+            });
+        }
+
+        function processFeedback(type) {
+            responses[type][currentTrial] = true;
+            
+            if(!inputs.feedback.checked || currentTrial < n) {
+                // Flash neutral just to acknowledge the keystroke was physically received
+                flashIndicator(type, 'neutral');
+                return; 
+            }
+            
+            const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
+            flashIndicator(type, isTarget); // Flashes green for hit, red for False Alarm
+        }
+
+        function calculateBlockAccuracy() {
+            let blockHits = 0, blockMisses = 0, blockFA = 0;
+            
+            const types = ['pos'];
+            if(mode === 'pos_col' || mode === 'all') types.push('col');
+            if(mode === 'pos_aud' || mode === 'all') types.push('aud');
+
+            types.forEach(type => {
+                for(let i=n; i<currentBlockTrials; i++) {
+                    const isTarget = trials[i][type] === trials[i-n][type];
+                    const responded = responses[type][i];
+                    
+                    if(isTarget && responded) { blockHits++; globalStats.hits++; }
+                    if(isTarget && !responded) { blockMisses++; globalStats.misses++; }
+                    if(!isTarget && responded) { blockFA++; globalStats.falseAlarms++; }
+                }
+            });
+
+            const targets = blockHits + blockMisses;
+            if(targets === 0) return 100;
+            return (blockHits / (blockHits + blockFA + blockMisses)) * 100 || 0;
+        }
+
+        function evaluateBlock() {
+            const avgAcc = calculateBlockAccuracy();
+            
+            if(avgAcc >= 80) {
+                n++;
+                if(n > highestN) highestN = n;
+            } else if(avgAcc < 50 && n > 1) {
+                n--;
+            }
+            inputs.n.value = n; 
+            saveSettings();
+        }
+
+        function forceEndSession() {
+            isRunning = false;
+            isTrialActive = false;
+            clearTimeout(sessionInterval);
+            window.speechSynthesis.cancel();
+            
+            calculateBlockAccuracy();
+
+            let totalAcc = 0;
+            const totalTargets = globalStats.hits + globalStats.misses;
+            if(totalTargets > 0) {
+                totalAcc = (globalStats.hits / (globalStats.hits + globalStats.falseAlarms + globalStats.misses)) * 100;
+            }
+
+            document.getElementById('results-text').innerHTML = `
+                <p>Trials Completed<br><strong>${totalTrialsPlayed}</strong></p>
+                <p style="margin-top: 1.5rem">Highest Level<strong class="stat-highlight">${highestN}-Back</strong></p>
+                <p style="margin-top: 1.5rem">Overall Accuracy<strong class="stat-highlight">${Math.round(totalAcc)}%</strong></p>
+            `;
+            switchScreen('results');
+        }
+
+        function switchScreen(id) {
+            Object.values(screens).forEach(s => { s.classList.remove('active'); });
+            screens[id].classList.add('active');
+        }
+
+        document.getElementById('start-btn').addEventListener('click', startSession);
+        document.getElementById('end-session-btn').addEventListener('click', forceEndSession);
+        document.getElementById('home-btn').addEventListener('click', () => switchScreen('setup'));
+
+        loadSettings();
+    </script>
+</body>
+</html>
