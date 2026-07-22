@@ -16,6 +16,7 @@
             --highlight-hover: #0070e6;
             --danger: #ff453a;
             --success: #30d158;
+            --warning: #ffd60a;
         }
 
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
@@ -31,7 +32,9 @@
             margin: auto; max-height: 95vh; overflow-y: auto;
         }
 
-        h1 { text-align: center; margin-bottom: 1.2rem; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+        h1 { text-align: center; margin-bottom: 0.2rem; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+        #global-timer { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; font-weight: 500; line-height: 1.3; }
+        
         h2 { font-size: 1.5rem; margin-bottom: 1.2rem; }
 
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -65,16 +68,21 @@
         button#start-btn:hover:not(:disabled) { background: var(--highlight-hover); }
         button#start-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        #end-session-btn { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin-top: 0; border-radius: 6px; cursor: pointer;}
-        #end-session-btn:hover { background: rgba(255, 69, 58, 0.1); }
-
-        .hud { height: 60px; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--panel-color); flex-shrink: 0; }
-        .stats-left { display: flex; align-items: baseline; }
+        .hud { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--panel-color); flex-shrink: 0; }
+        .stats-left { display: flex; align-items: baseline; gap: 15px; }
+        #session-timer-display { font-size: 1.1rem; font-weight: 700; color: var(--highlight); background: rgba(10, 132, 255, 0.1); padding: 4px 10px; border-radius: 6px; }
         #n-display { font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
+        
+        .hud-right { display: flex; gap: 10px; }
+        .hud-btn { background: transparent; border: 1px solid; width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-weight: 600;}
+        #pause-btn { border-color: var(--warning); color: var(--warning); }
+        #pause-btn:hover { background: rgba(255, 214, 10, 0.1); }
+        #end-session-btn { border-color: var(--danger); color: var(--danger); }
+        #end-session-btn:hover { background: rgba(255, 69, 58, 0.1); }
 
         .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 15px; overflow: hidden; min-height: 0; }
         
-        #inter-block-msg { font-size: 1.5rem; font-weight: bold; color: var(--highlight); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; }
+        #inter-block-msg { font-size: 1.5rem; font-weight: bold; color: var(--highlight); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; text-align: center; }
         
         .grid-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; padding-bottom: 15px; min-height: 0; position: relative; }
 
@@ -94,17 +102,22 @@
         .word-stimulus { margin-top: 8%; font-size: clamp(0.9rem, 2vmin, 1.5rem); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; text-shadow: 0px 2px 4px rgba(0,0,0,1); text-align: center; }
 
         .input-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 800px; flex-shrink: 0; padding: 5px; }
+        
         .input-indicator { 
             flex: 1; min-width: 80px; background: var(--panel-color); border: 2px solid var(--border-color); border-radius: 8px;
             padding: 10px 5px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-            transition: all 0.15s ease;
+            transition: all 0.1s ease; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation;
         }
-        .indicator-key { font-family: monospace; font-size: clamp(0.9rem, 1.5vw, 1.1rem); font-weight: bold; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); }
-        .indicator-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .input-indicator:active { transform: scale(0.95); }
+        
+        .indicator-key { font-family: monospace; font-size: clamp(0.9rem, 1.5vw, 1.1rem); font-weight: bold; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); pointer-events: none; }
+        .indicator-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; pointer-events: none; }
 
-        .flash-correct { background-color: rgba(48, 209, 88, 0.2); border-color: var(--success); transform: scale(1.05); }
-        .flash-wrong { background-color: rgba(255, 69, 58, 0.2); border-color: var(--danger); transform: scale(1.05); }
-        .flash-neutral { background-color: rgba(255, 255, 255, 0.1); border-color: #8e8e93; transform: scale(1.05); }
+        .flash-correct { background-color: rgba(48, 209, 88, 0.2); border-color: var(--success); }
+        .flash-correct .indicator-key { color: var(--success); border-color: var(--success); }
+        .flash-wrong { background-color: rgba(255, 69, 58, 0.2); border-color: var(--danger); }
+        .flash-wrong .indicator-key { color: var(--danger); border-color: var(--danger); }
+        .flash-neutral { background-color: rgba(255, 255, 255, 0.1); border-color: #8e8e93; }
         .flash-neutral .indicator-key { color: #8e8e93; border-color: #8e8e93; }
 
         .text-center { text-align: center; }
@@ -121,6 +134,7 @@
     <div id="setup-screen" class="screen active">
         <div class="menu-panel">
             <h1>Affective N-Back</h1>
+            <div id="global-timer">How much you have trained since you logged in: 0 mins</div>
             
             <div class="settings-grid">
                 <div class="settings-group">
@@ -155,7 +169,7 @@
             </div>
 
             <div class="settings-group">
-                <label>Keybindings (Click to Rebind)</label>
+                <label>Keybindings (Or Tap Buttons During Play)</label>
                 <div class="keybind-container">
                     <div class="keybind-row">
                         <span>Position</span>
@@ -187,10 +201,14 @@
     <div id="game-screen" class="screen">
         <div class="hud">
             <div class="stats-left">
+                <span id="session-timer-display">0 mins</span>
                 <span id="n-display"></span>
-                <span id="trial-display" style="color: #8e8e93; font-size: 1rem; margin-left: 15px;"></span>
+                <span id="trial-display" style="color: #8e8e93; font-size: 1rem;"></span>
             </div>
-            <button id="end-session-btn">End Session</button>
+            <div class="hud-right">
+                <button id="pause-btn" class="hud-btn">Pause</button>
+                <button id="end-session-btn" class="hud-btn">End</button>
+            </div>
         </div>
         
         <div class="game-area">
@@ -221,7 +239,7 @@
             'assets/faces/face_3.jpg', 'assets/faces/face_4.jpg', 'assets/faces/face_5.jpg',
             'assets/faces/face_6.jpg', 'assets/faces/face_7.jpg', 'assets/faces/face_8.jpg', 'assets/faces/face_9.jpg'
         ];
-        const WORDS = ['Murder', 'Rape', 'Genocide', 'Suicide', 'Slaughter', 'Useless', 'Love', 'Win', 'Happy', 'Helpful', 'Money', 'Gift'];
+        const WORDS = ['Murder', 'Agony', 'Despair', 'Panic', 'Slaughter', 'Grief', 'Glory', 'Triumph', 'Bliss', 'Miracle', 'Wealth', 'Ecstasy'];
         const COLORS = ['#FF453A', '#30D158', '#0A84FF', '#FFD60A', '#BF5AF2', '#FF9F0A'];
 
         // DOM Elements
@@ -236,6 +254,7 @@
         const preloadContainer = document.getElementById('preload-container');
         const voiceSelect = document.getElementById('voice-select');
         const testVoiceBtn = document.getElementById('test-voice-btn');
+        const pauseBtn = document.getElementById('pause-btn');
 
         // State Variables
         let n, mode, gridSize, currentBlockTrials, trials = [], currentTrial = 0, sessionInterval, totalTrialsPlayed = 0;
@@ -244,32 +263,79 @@
         let globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
         let isRunning = false;
         let isTrialActive = false;
+        let isPaused = false;
         let availableVoices = [];
+        let selectedVoiceURI = null;
+
+        // Timers Variables
+        let cumulativeTrainedMs = 0; // Total active time from past sessions this login
+        let sessionElapsedMs = 0;    // Time for current session
+        let sessionLastTick = 0;
 
         // Keybindings Setup
         let keys = { pos: 'ArrowLeft', col: 'ArrowUp', aud: 'ArrowRight' };
         let listeningForBind = null;
 
+        // Timers Loop
+        setInterval(() => {
+            let activeCurrentSessionMs = 0;
+
+            // Calculate current session time
+            if (isRunning && !isPaused) {
+                const now = Date.now();
+                sessionElapsedMs += (now - sessionLastTick);
+                sessionLastTick = now;
+                activeCurrentSessionMs = sessionElapsedMs;
+                const sessionMins = Math.floor(sessionElapsedMs / 60000);
+                document.getElementById('session-timer-display').innerText = `${sessionMins} mins`;
+            } else if (isRunning && isPaused) {
+                sessionLastTick = Date.now();
+                activeCurrentSessionMs = sessionElapsedMs;
+            }
+
+            // Total training time across all sessions since login
+            const totalTrainedMins = Math.floor((cumulativeTrainedMs + activeCurrentSessionMs) / 60000);
+            document.getElementById('global-timer').innerText = `How much you have trained since you logged in: ${totalTrainedMins} mins`;
+        }, 1000);
+
         function populateVoices() {
             if (typeof speechSynthesis === 'undefined') return;
             
             const rawVoices = window.speechSynthesis.getVoices();
+            if (!rawVoices || rawVoices.length === 0) return;
+
             availableVoices = rawVoices.filter(v => v.lang.startsWith('en'));
             if (availableVoices.length === 0) availableVoices = rawVoices;
 
             voiceSelect.innerHTML = '';
+            let selectedIndex = -1;
+
             availableVoices.forEach((v, idx) => {
                 const opt = document.createElement('option');
                 opt.value = idx;
                 opt.textContent = `${v.name} (${v.lang})`;
                 
-                // Favor natural/enhanced high quality English voices
-                if (v.default || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Natural')) {
+                // If the user already selected a voice URI, maintain it
+                if (selectedVoiceURI && v.voiceURI === selectedVoiceURI) {
                     opt.selected = true;
+                    selectedIndex = idx;
+                } else if (!selectedVoiceURI && selectedIndex === -1 && (v.default || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Natural'))) {
+                    opt.selected = true;
+                    selectedIndex = idx;
                 }
                 voiceSelect.appendChild(opt);
             });
+
+            if (voiceSelect.value !== "") {
+                selectedVoiceURI = availableVoices[voiceSelect.value]?.voiceURI;
+            }
         }
+
+        voiceSelect.addEventListener('change', () => {
+            if (availableVoices[voiceSelect.value]) {
+                selectedVoiceURI = availableVoices[voiceSelect.value].voiceURI;
+            }
+        });
 
         if (typeof speechSynthesis !== 'undefined') {
             if (speechSynthesis.onvoiceschanged !== undefined) {
@@ -280,11 +346,11 @@
 
         testVoiceBtn.addEventListener('click', () => {
             window.speechSynthesis.cancel();
-            const idx = voiceSelect.value;
-            if (availableVoices[idx]) {
+            let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[voiceSelect.value];
+            if (chosenVoice) {
                 const msg = new SpeechSynthesisUtterance('Triumph');
-                msg.voice = availableVoices[idx];
-                msg.lang = availableVoices[idx].lang || 'en-US';
+                msg.voice = chosenVoice;
+                msg.lang = chosenVoice.lang || 'en-US';
                 msg.rate = 1.1;
                 window.speechSynthesis.speak(msg);
             }
@@ -320,6 +386,7 @@
             });
         });
 
+        // Keyboard support
         document.addEventListener('keydown', (e) => {
             if (listeningForBind) {
                 e.preventDefault();
@@ -331,7 +398,7 @@
                 return;
             }
 
-            if (!screens.game.classList.contains('active') || !isRunning || !isTrialActive || currentTrial >= currentBlockTrials) return;
+            if (!screens.game.classList.contains('active') || !isRunning || !isTrialActive || currentTrial >= currentBlockTrials || isPaused) return;
             
             if (e.key === keys.pos && !responses.pos[currentTrial]) processFeedback('pos');
             if (e.key === keys.col && (mode === 'pos_col' || mode === 'all') && !responses.col[currentTrial]) processFeedback('col');
@@ -360,17 +427,31 @@
         function buildInputBar() {
             inputBar.innerHTML = '';
             const addIndicator = (type, label, key) => {
-                inputBar.innerHTML += `
-                    <div class="input-indicator" id="ind-${type}">
+                const html = `
+                    <div class="input-indicator" id="ind-${type}" data-type="${type}">
                         <span class="indicator-key">${formatKey(key)}</span>
                         <span class="indicator-label">${label}</span>
                     </div>
                 `;
+                inputBar.insertAdjacentHTML('beforeend', html);
             };
 
             addIndicator('pos', 'Position', keys.pos);
             if(mode === 'pos_col' || mode === 'all') addIndicator('col', 'Color', keys.col);
             if(mode === 'pos_aud' || mode === 'all') addIndicator('aud', 'Audio', keys.aud);
+
+            // Attach touch and click events for Mobile
+            document.querySelectorAll('.input-indicator').forEach(ind => {
+                const triggerFeedback = (e) => {
+                    e.preventDefault();
+                    if (!isRunning || !isTrialActive || currentTrial >= currentBlockTrials || isPaused) return;
+                    const type = ind.dataset.type;
+                    if (!responses[type][currentTrial]) processFeedback(type);
+                };
+                
+                ind.addEventListener('touchstart', triggerFeedback);
+                ind.addEventListener('mousedown', triggerFeedback);
+            });
         }
 
         function setupGrid() {
@@ -423,6 +504,10 @@
             highestN = n;
             saveSettings();
 
+            if (voiceSelect.value !== "" && availableVoices[voiceSelect.value]) {
+                selectedVoiceURI = availableVoices[voiceSelect.value].voiceURI;
+            }
+
             window.speechSynthesis.cancel();
             let silentMsg = new SpeechSynthesisUtterance('');
             silentMsg.volume = 0;
@@ -432,6 +517,13 @@
             totalTrialsPlayed = 0;
             isRunning = true;
             isTrialActive = false;
+            isPaused = false;
+            pauseBtn.innerText = "Pause";
+            
+            // Reset Session Timer
+            sessionElapsedMs = 0;
+            sessionLastTick = Date.now();
+            document.getElementById('session-timer-display').innerText = `0 mins`;
             
             setupGrid();
             buildInputBar();
@@ -454,11 +546,12 @@
             
             clearGrid();
             gridContainer.style.display = 'none';
+            interBlockMsg.innerText = "Get Ready...";
             interBlockMsg.style.display = 'block';
             isTrialActive = false;
 
             sessionInterval = setTimeout(() => {
-                if(!isRunning) return;
+                if(!isRunning || isPaused) return;
                 interBlockMsg.style.display = 'none';
                 gridContainer.style.display = 'grid';
                 runTrial();
@@ -512,18 +605,22 @@
         }
 
         function runTrial() {
-            if(!isRunning) return;
+            if(!isRunning || isPaused) return;
 
             if(currentTrial >= currentBlockTrials) {
                 evaluateBlock();
-                if(isRunning) startNewBlock();
+                if(isRunning && !isPaused) startNewBlock();
                 return;
             }
 
             document.getElementById('trial-display').innerText = `(Trial ${currentTrial + 1}/${currentBlockTrials})`;
             
             clearGrid();
-            totalTrialsPlayed++;
+            
+            if (!responses.pos[currentTrial] && !responses.col[currentTrial] && !responses.aud[currentTrial]) {
+                totalTrialsPlayed++;
+            }
+            
             isTrialActive = true;
             
             const trial = trials[currentTrial];
@@ -541,10 +638,11 @@
             if(mode === 'pos_aud' || mode === 'all') {
                 window.speechSynthesis.cancel();
                 const msg = new SpeechSynthesisUtterance(trial.audWord);
-                const idx = voiceSelect.value;
-                if (availableVoices[idx]) {
-                    msg.voice = availableVoices[idx];
-                    msg.lang = availableVoices[idx].lang || 'en-US';
+                
+                let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[voiceSelect.value];
+                if (chosenVoice) {
+                    msg.voice = chosenVoice;
+                    msg.lang = chosenVoice.lang || 'en-US';
                 } else {
                     msg.lang = 'en-US';
                 }
@@ -553,12 +651,12 @@
             }
 
             sessionInterval = setTimeout(() => {
-                if(!isRunning) return;
+                if(!isRunning || isPaused) return;
                 
                 clearGrid();
                 
                 sessionInterval = setTimeout(() => {
-                    if(!isRunning) return;
+                    if(!isRunning || isPaused) return;
                     
                     if(inputs.feedback.checked && currentTrial >= n) {
                         const activeTypes = ['pos'];
@@ -636,25 +734,65 @@
             saveSettings();
         }
 
+        // Pause / Resume Logic
+        pauseBtn.addEventListener('click', () => {
+            if (!isRunning) return;
+
+            if (!isPaused) {
+                isPaused = true;
+                clearTimeout(sessionInterval);
+                window.speechSynthesis.cancel();
+                pauseBtn.innerText = "Resume";
+                gridContainer.style.display = 'none';
+                interBlockMsg.innerText = "PAUSED";
+                interBlockMsg.style.display = 'block';
+            } else {
+                isPaused = false;
+                pauseBtn.innerText = "Pause";
+                interBlockMsg.innerText = "Resuming...";
+                
+                if (responses.pos[currentTrial]) responses.pos[currentTrial] = false;
+                if (responses.col[currentTrial]) responses.col[currentTrial] = false;
+                if (responses.aud[currentTrial]) responses.aud[currentTrial] = false;
+                
+                setTimeout(() => {
+                    if (!isRunning || isPaused) return;
+                    interBlockMsg.style.display = 'none';
+                    gridContainer.style.display = 'grid';
+                    runTrial(); 
+                }, 1200);
+            }
+            if(document.activeElement) document.activeElement.blur();
+        });
+
         function forceEndSession() {
             isRunning = false;
             isTrialActive = false;
+            isPaused = false;
             clearTimeout(sessionInterval);
             window.speechSynthesis.cancel();
             
             calculateBlockAccuracy();
+
+            // Store accumulated session time into total trained time
+            cumulativeTrainedMs += sessionElapsedMs;
 
             let totalAcc = 0;
             const totalTargets = globalStats.hits + globalStats.misses;
             if(totalTargets > 0) {
                 totalAcc = (globalStats.hits / (globalStats.hits + globalStats.falseAlarms + globalStats.misses)) * 100;
             }
+            
+            const finalMins = Math.floor(sessionElapsedMs / 60000);
 
             document.getElementById('results-text').innerHTML = `
-                <p>Trials Completed<br><strong>${totalTrialsPlayed}</strong></p>
+                <p>Time Elapsed<br><strong>${finalMins} minutes</strong></p>
+                <p style="margin-top: 1.5rem">Trials Completed<br><strong>${totalTrialsPlayed}</strong></p>
                 <p style="margin-top: 1.5rem">Highest Level<strong class="stat-highlight">${highestN}-Back</strong></p>
                 <p style="margin-top: 1.5rem">Overall Accuracy<strong class="stat-highlight">${Math.round(totalAcc)}%</strong></p>
             `;
+            
+            sessionElapsedMs = 0;
             switchScreen('results');
         }
 
