@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Affective N-Back</title>
+    <title>Affective N-Back - Advanced</title>
     <style>
         :root {
             --bg-color: #0d0d0d; 
@@ -28,27 +28,30 @@
 
         .menu-panel {
             background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px;
-            padding: 1.5rem 2rem; width: 95%; max-width: 460px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            padding: 1.5rem 2rem; width: 95%; max-width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             margin: auto; max-height: 95vh; overflow-y: auto;
         }
+        
+        .menu-panel::-webkit-scrollbar { width: 8px; }
+        .menu-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 
         h1 { text-align: center; margin-bottom: 0.2rem; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
         #global-timer { text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.2rem; font-weight: 500; line-height: 1.3; }
-        
         h2 { font-size: 1.5rem; margin-bottom: 1.2rem; }
 
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .settings-group { margin-bottom: 1rem; display: flex; flex-direction: column; }
-        .settings-group label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.4rem; }
+        .settings-group { margin-bottom: 1rem; display: flex; flex-direction: column; background: #222; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .settings-group label.header { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
 
-        select, input[type="number"] {
+        select, input[type="number"], input[type="range"] {
             width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);
             background: var(--bg-color); color: var(--text-color); font-size: 0.95rem; outline: none; transition: border 0.2s;
         }
         select:focus, input:focus { border-color: var(--highlight); }
+        input[type="range"] { padding: 0; background: transparent; border: none; }
 
         .keybind-container { background: var(--bg-color); border-radius: 6px; border: 1px solid var(--border-color); overflow: hidden; }
-        .keybind-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border-color); }
+        .keybind-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 1rem; border-bottom: 1px solid var(--border-color); }
         .keybind-row:last-child { border-bottom: none; }
         .keybind-row span { font-size: 0.9rem; font-weight: 500; }
         .bind-btn { background: var(--panel-color); border: 1px solid var(--border-color); padding: 0.4rem 0.8rem; border-radius: 4px; color: var(--text-color); font-size: 0.85rem; margin-top: 0; width: auto; font-family: monospace; cursor: pointer; }
@@ -56,69 +59,198 @@
 
         @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
 
-        .checkbox-container { display: flex; align-items: center; cursor: pointer; font-size: 0.9rem; color: var(--text-color); font-weight: 500; }
+        .checkbox-container { display: flex; align-items: center; cursor: pointer; font-size: 0.9rem; color: var(--text-color); font-weight: 500; margin-bottom: 5px; }
         .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
-        .checkmark { height: 18px; width: 18px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; margin-right: 10px; display: flex; align-items: center; justify-content: center; }
+        .checkmark { height: 18px; width: 18px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; margin-right: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
         .checkbox-container:hover input ~ .checkmark { border-color: var(--highlight); }
         .checkbox-container input:checked ~ .checkmark { background-color: var(--highlight); border-color: var(--highlight); }
         .checkmark:after { content: ""; display: none; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
         .checkbox-container input:checked ~ .checkmark:after { display: block; }
 
+        .stimuli-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
         button#start-btn { width: 100%; padding: 0.9rem; border: none; border-radius: 8px; background: var(--highlight); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; transition: all 0.2s; }
         button#start-btn:hover:not(:disabled) { background: var(--highlight-hover); }
         button#start-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .hud { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--panel-color); flex-shrink: 0; }
+        button#home-btn { 
+            width: 100%; padding: 0.9rem; border: none; border-radius: 8px; 
+            background: #2c3e50; color: white; font-size: 1rem; font-weight: 600; 
+            cursor: pointer; margin-top: 1rem; transition: all 0.2s; font-family: inherit;
+        }
+        button#home-btn:hover { background: #1a252f; }
+
+        .hud { height: 60px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); background: var(--panel-color); flex-shrink: 0; width: 100%; }
         .stats-left { display: flex; align-items: baseline; gap: 15px; }
         #session-timer-display { font-size: 1.1rem; font-weight: 700; color: var(--highlight); background: rgba(10, 132, 255, 0.1); padding: 4px 10px; border-radius: 6px; }
-        #n-display { font-size: 1.1rem; font-weight: 700; color: var(--text-color); }
-        
+        #n-display { font-size: 1.1rem; font-weight: 700; color: var(--text-color); transition: color 0.2s; }
         .hud-right { display: flex; gap: 10px; }
         .hud-btn { background: transparent; border: 1px solid; width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 6px; cursor: pointer; font-weight: 600;}
         #pause-btn { border-color: var(--warning); color: var(--warning); }
-        #pause-btn:hover { background: rgba(255, 214, 10, 0.1); }
         #end-session-btn { border-color: var(--danger); color: var(--danger); }
-        #end-session-btn:hover { background: rgba(255, 69, 58, 0.1); }
 
-        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 15px; overflow: hidden; min-height: 0; }
-        
-        #inter-block-msg { font-size: 1.5rem; font-weight: bold; color: var(--highlight); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; text-align: center; }
-        
-        .grid-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; padding-bottom: 15px; min-height: 0; position: relative; }
-
-        #grid-container {
-            display: grid; gap: 15px; width: 100%; height: 100%;
-            max-width: min(70vh, 800px); max-height: min(70vh, 800px); aspect-ratio: 1 / 1;
+        /* Updated Game Layout to incorporate side feedback buttons */
+        .game-area { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: row; 
+            align-items: center; 
+            justify-content: space-between; 
+            padding: 10px; 
+            overflow: hidden; 
+            position: relative; 
+            width: 100%; 
+            height: calc(100vh - 60px);
+            gap: 10px;
         }
 
-        .grid-cell-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; width: 100%; height: 100%; }
-
-        .circle { 
-            width: 70%; aspect-ratio: 1; border-radius: 50%; background: var(--circle-bg); 
-            display: flex; align-items: center; justify-content: center; position: relative; 
-            border: 3px solid transparent; overflow: hidden;
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 15px;
+            width: 85px;
+            min-width: 70px;
+            max-width: 110px;
+            height: 100%;
+            z-index: 10;
+            flex-shrink: 0;
         }
-        .face-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
-        .word-stimulus { margin-top: 8%; font-size: clamp(0.9rem, 2vmin, 1.5rem); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; text-shadow: 0px 2px 4px rgba(0,0,0,1); text-align: center; }
 
-        .input-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; max-width: 800px; flex-shrink: 0; padding: 5px; }
+        .center-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+        }
+
+        #inter-block-msg { font-size: 1.5rem; font-weight: bold; color: var(--highlight); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; text-align: center; z-index: 100; }
+
+        /* Container for Top Stimulus & N-indicator */
+        .top-hud-container { height: 100px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+
+        /* Top Stimulus Area (Shape/Color) */
+        #top-stimulus-area { display: flex; visibility: hidden; position: relative; width: 80px; height: 80px; margin: 0 auto; flex-shrink: 0; align-items: center; justify-content: center; }
+        #shape-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.5)); }
+        #top-word { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: clamp(0.7rem, 2vmin, 0.95rem); font-weight: 900; 
+            text-transform: uppercase; text-shadow: 0px 2px 4px rgba(0,0,0,1); 
+            z-index: 2; text-align: center; padding: 0 4px; word-break: break-word;
+        }
+
+        /* Variable K Indicator */
+        #variable-k-indicator { height: 20px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: bold; color: var(--text-muted); }
+
+        /* Adaptive 2D Grid - Maximized size fitting viewport neatly */
+        #grid-container-2d { 
+            display: none; 
+            gap: min(2vmin, 12px); 
+            width: 100%; 
+            max-width: min(calc(100vw - 200px), calc(100vh - 170px)); 
+            max-height: min(calc(100vw - 200px), calc(100vh - 170px)); 
+            aspect-ratio: 1 / 1; 
+            margin: auto; 
+        }
         
+        .grid-cell-wrapper { min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--circle-bg); border-radius: 8px; border: 2px solid transparent; }
+        .circle { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 6px; }
+        .face-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+
+        /* Adaptive 3D Grid - Scales accurately within central area */
+        .scene3d { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            max-width: min(calc(100vw - 200px), calc(100vh - 170px)); 
+            max-height: min(calc(100vw - 200px), calc(100vh - 170px)); 
+            aspect-ratio: 1 / 1; 
+            perspective: 1000px; 
+            margin: auto; 
+            flex-shrink: 0; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .cube3d { width: 0; height: 0; position: relative; transform-style: preserve-3d; animation: rotateCube 15s infinite linear; }
+        
+        .minicube { 
+            position: absolute; 
+            width: clamp(28px, 9vmin, 60px); 
+            height: clamp(28px, 9vmin, 60px); 
+            left: clamp(-30px, -4.5vmin, -14px); 
+            top: clamp(-30px, -4.5vmin, -14px); 
+            transform-style: preserve-3d; 
+        }
+        .mini-face { position: absolute; width: 100%; height: 100%; background: rgba(38, 38, 38, 0.6); border: 1px solid rgba(142, 142, 147, 0.5); display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 4px; }
+        
+        .mini-face.front  { transform: translateZ(clamp(14px, 4.5vmin, 30px)); }
+        .mini-face.back   { transform: rotateY(180deg) translateZ(clamp(14px, 4.5vmin, 30px)); }
+        .mini-face.right  { transform: rotateY(90deg) translateZ(clamp(14px, 4.5vmin, 30px)); }
+        .mini-face.left   { transform: rotateY(-90deg) translateZ(clamp(14px, 4.5vmin, 30px)); }
+        .mini-face.top    { transform: rotateX(90deg) translateZ(clamp(14px, 4.5vmin, 30px)); }
+        .mini-face.bottom { transform: rotateX(-90deg) translateZ(clamp(14px, 4.5vmin, 30px)); }
+
+        @keyframes rotateCube {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(360deg) rotateY(720deg) rotateZ(360deg); }
+        }
+
+        /* Vertical Side Feedback Buttons */
         .input-indicator { 
-            flex: 1; min-width: 80px; background: var(--panel-color); border: 2px solid var(--border-color); border-radius: 8px;
-            padding: 10px 5px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-            transition: all 0.1s ease; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+            flex: 1; 
+            max-height: 160px;
+            min-height: 80px;
+            background: var(--panel-color); 
+            border: 2px solid var(--border-color); 
+            border-radius: 12px;
+            padding: 10px 4px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.1s ease; 
+            cursor: pointer; 
+            user-select: none; 
+            -webkit-user-select: none; 
+            touch-action: manipulation;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .input-indicator:active { transform: scale(0.95); }
         
-        .indicator-key { font-family: monospace; font-size: clamp(0.9rem, 1.5vw, 1.1rem); font-weight: bold; background: var(--bg-color); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); pointer-events: none; }
-        .indicator-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; pointer-events: none; }
+        .indicator-initial { 
+            font-size: clamp(1.8rem, 4vw, 2.5rem); 
+            font-weight: 900; 
+            line-height: 1;
+            color: var(--text-color); 
+            pointer-events: none; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .indicator-key { 
+            font-family: monospace; 
+            font-size: clamp(0.65rem, 1.2vw, 0.8rem); 
+            font-weight: 600; 
+            background: var(--bg-color); 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            border: 1px solid var(--border-color); 
+            pointer-events: none; 
+            color: var(--text-muted);
+        }
 
-        .flash-correct { background-color: rgba(48, 209, 88, 0.2); border-color: var(--success); }
-        .flash-correct .indicator-key { color: var(--success); border-color: var(--success); }
-        .flash-wrong { background-color: rgba(255, 69, 58, 0.2); border-color: var(--danger); }
-        .flash-wrong .indicator-key { color: var(--danger); border-color: var(--danger); }
-        .flash-neutral { background-color: rgba(255, 255, 255, 0.1); border-color: #8e8e93; }
-        .flash-neutral .indicator-key { color: #8e8e93; border-color: #8e8e93; }
+        .flash-correct { background-color: rgba(48, 209, 88, 0.3) !important; border-color: var(--success) !important; }
+        .flash-correct .indicator-initial { color: var(--success) !important; }
+        .flash-wrong { background-color: rgba(255, 69, 58, 0.3) !important; border-color: var(--danger) !important; }
+        .flash-wrong .indicator-initial { color: var(--danger) !important; }
+        .flash-neutral { background-color: rgba(255, 255, 255, 0.15) !important; border-color: #8e8e93 !important; }
+        .flash-neutral .indicator-initial { color: #8e8e93 !important; }
 
         .text-center { text-align: center; }
         #results-text p { margin-bottom: 0.8rem; font-size: 1.1rem; color: var(--text-muted); }
@@ -126,6 +258,14 @@
         .stat-highlight { color: var(--highlight); font-weight: 700; font-size: 1.5rem !important; display: block; margin-top: 5px; }
         
         #preload-container { display: none; }
+
+        @media (max-width: 600px) {
+            .side-panel { width: 65px; min-width: 60px; }
+            #grid-container-2d, .scene3d {
+                max-width: min(calc(100vw - 140px), calc(100vh - 160px));
+                max-height: min(calc(100vw - 140px), calc(100vh - 160px));
+            }
+        }
     </style>
 </head>
 <body>
@@ -137,31 +277,62 @@
             <div id="global-timer">How much you have trained since you logged in: 0 mins</div>
             
             <div class="settings-grid">
-                <div class="settings-group">
-                    <label>Grid Size</label>
+                <div class="settings-group" style="margin-bottom:0;">
+                    <label class="header">Grid Type</label>
+                    <select id="grid-type">
+                        <option value="2d">2D Grid</option>
+                        <option value="3d">3D Cube (3x3x3)</option>
+                    </select>
+                </div>
+                <div class="settings-group" style="margin-bottom:0;" id="grid-size-group">
+                    <label class="header">2D Grid Size</label>
                     <select id="grid-size">
                         <option value="3">3 x 3</option>
                         <option value="4">4 x 4</option>
                     </select>
                 </div>
+            </div>
 
-                <div class="settings-group">
-                    <label>Starting N-Level</label>
-                    <input type="number" id="n-level" min="1" value="2">
+            <div class="settings-group" id="speed-3d-group" style="display:none; margin-top:15px;">
+                <label class="header">3D Rotation Speed: <span id="speed-display">Normal</span></label>
+                <input type="range" id="speed-3d-slider" min="1" max="100" value="50">
+            </div>
+
+            <div class="settings-group" style="margin-top:15px;">
+                <label class="header">N-Level & Modifiers</label>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 0.85rem; width: 120px;">Starting N-Level:</span>
+                    <input type="number" id="n-level" min="1" value="2" style="flex: 1;">
+                </div>
+                <label class="checkbox-container" style="margin-bottom: 8px;">
+                    <input type="checkbox" id="var-nback-enable">
+                    <span class="checkmark"></span> Enable Variable N-Back
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center; margin-left: 28px; opacity: 0.5;" id="var-nback-options">
+                    <span style="font-size: 0.8rem;">Min 'k' (a):</span>
+                    <input type="range" id="var-nback-min" min="1" max="1" value="1" style="flex: 1;" disabled>
+                    <span id="var-min-display" style="font-size: 0.8rem; width: 15px;">1</span>
                 </div>
             </div>
 
             <div class="settings-group">
-                <label>Stimuli Mode</label>
-                <select id="mode">
-                    <option value="pos_col">Position + Color</option>
-                    <option value="pos_aud">Position + Audio</option>
-                    <option value="all">Position + Color + Audio</option>
-                </select>
+                <label class="header">Interference Control: <span id="interf-display">30%</span></label>
+                <input type="range" id="interference-slider" min="0" max="100" value="30">
+                <span style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 4px;">0% (Distinct) ↔ 100% (Repetitive)</span>
+            </div>
+
+            <div class="settings-group">
+                <label class="header">Active Modalities (Select at least 1)</label>
+                <div class="stimuli-grid">
+                    <label class="checkbox-container"><input type="checkbox" id="stim-pos" checked><span class="checkmark"></span> Position</label>
+                    <label class="checkbox-container"><input type="checkbox" id="stim-col"><span class="checkmark"></span> Color</label>
+                    <label class="checkbox-container"><input type="checkbox" id="stim-aud"><span class="checkmark"></span> Audio</label>
+                    <label class="checkbox-container"><input type="checkbox" id="stim-shp"><span class="checkmark"></span> Shape</label>
+                </div>
             </div>
 
             <div class="settings-group" id="group-voice" style="display:none;">
-                <label>Audio Voice</label>
+                <label class="header">Audio Voice</label>
                 <div style="display: flex; gap: 8px;">
                     <select id="voice-select" style="flex: 1;"></select>
                     <button type="button" id="test-voice-btn" class="bind-btn">Test</button>
@@ -169,28 +340,16 @@
             </div>
 
             <div class="settings-group">
-                <label>Keybindings (Or Tap Buttons During Play)</label>
-                <div class="keybind-container">
-                    <div class="keybind-row">
-                        <span>Position</span>
-                        <button class="bind-btn" data-type="pos" id="bind-pos">ArrowLeft</button>
-                    </div>
-                    <div class="keybind-row" id="row-col">
-                        <span>Color</span>
-                        <button class="bind-btn" data-type="col" id="bind-col">ArrowUp</button>
-                    </div>
-                    <div class="keybind-row" id="row-aud" style="display:none;">
-                        <span>Audio</span>
-                        <button class="bind-btn" data-type="aud" id="bind-aud">ArrowRight</button>
-                    </div>
+                <label class="header">Keybindings (Or Tap In-Game)</label>
+                <div class="keybind-container" id="keybind-list">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
-            <div class="settings-group checkbox-group" style="margin-top: 10px;">
+            <div class="settings-group" style="background: transparent; border: none; padding: 0;">
                 <label class="checkbox-container">
                     <input type="checkbox" id="feedback" checked>
-                    <span class="checkmark"></span>
-                    Enable Instant Visual Feedback
+                    <span class="checkmark"></span> Enable Instant Visual Feedback
                 </label>
             </div>
 
@@ -212,12 +371,31 @@
         </div>
         
         <div class="game-area">
-            <div class="grid-wrapper">
-                <div id="inter-block-msg">Get Ready...</div>
-                <div id="grid-container"></div>
-            </div>
+            <div id="inter-block-msg">Get Ready...</div>
             
-            <div class="input-bar" id="input-bar"></div>
+            <!-- Left Feedback Buttons Panel -->
+            <div class="side-panel" id="side-panel-left"></div>
+
+            <!-- Central Stage Area -->
+            <div class="center-stage">
+                <div class="top-hud-container">
+                    <div id="top-stimulus-area">
+                        <svg id="shape-svg" viewBox="0 0 100 100"></svg>
+                        <div id="top-word"></div>
+                    </div>
+
+                    <div id="variable-k-indicator"></div>
+                </div>
+
+                <div id="grid-container-2d"></div>
+                
+                <div class="scene3d" id="scene3d">
+                    <div class="cube3d" id="cube3d"></div>
+                </div>
+            </div>
+
+            <!-- Right Feedback Buttons Panel -->
+            <div class="side-panel" id="side-panel-right"></div>
         </div>
     </div>
 
@@ -230,7 +408,7 @@
     </div>
 
     <script>
-        const STATE_KEY = 'affective_nback_state';
+        const STATE_KEY = 'affective_nback_adv_state';
         const STIMULUS_DURATION = 1500;
         const ISI = 1000; 
 
@@ -239,74 +417,147 @@
             'assets/faces/face_3.jpg', 'assets/faces/face_4.jpg', 'assets/faces/face_5.jpg',
             'assets/faces/face_6.jpg', 'assets/faces/face_7.jpg', 'assets/faces/face_8.jpg', 'assets/faces/face_9.jpg'
         ];
-        const WORDS = ['Murder', 'Rape', 'Failure', 'Exam', 'Genocide', 'Retard', 'Succesful', 'Victory', 'Gift', 'Miracle', 'Money', 'Loved'];
+        const WORDS = ['Murder', 'Agony', 'Despair', 'Panic', 'Slaughter', 'Grief', 'Glory', 'Triumph', 'Bliss', 'Miracle', 'Wealth', 'Ecstasy'];
         const COLORS = ['#FF453A', '#30D158', '#0A84FF', '#FFD60A', '#BF5AF2', '#FF9F0A'];
+        
+        // Optimised SVG definitions where Triangle and Star have enlarged inner centers to contain color fill & text cleanly
+        const SHAPES_SVG = [
+            '<circle cx="50" cy="50" r="44" fill="FILL_COLOR" stroke="STROKE_COLOR" stroke-width="5"/>',
+            '<rect x="8" y="8" width="84" height="84" rx="12" fill="FILL_COLOR" stroke="STROKE_COLOR" stroke-width="5"/>',
+            '<polygon points="50,6 94,92 6,92" fill="FILL_COLOR" stroke="STROKE_COLOR" stroke-width="5" stroke-linejoin="round"/>',
+            '<polygon points="50,5 64,34 96,35 71,55 80,88 50,69 20,88 29,55 4,35 36,34" fill="FILL_COLOR" stroke="STROKE_COLOR" stroke-width="5" stroke-linejoin="round"/>',
+            '<polygon points="50,6 94,26 94,74 50,94 6,74 6,26" fill="FILL_COLOR" stroke="STROKE_COLOR" stroke-width="5" stroke-linejoin="round"/>'
+        ];
 
         // DOM Elements
         const screens = { setup: document.getElementById('setup-screen'), game: document.getElementById('game-screen'), results: document.getElementById('results-screen') };
         const inputs = { 
-            grid: document.getElementById('grid-size'), mode: document.getElementById('mode'), 
-            n: document.getElementById('n-level'), feedback: document.getElementById('feedback')
+            gridType: document.getElementById('grid-type'), gridSize: document.getElementById('grid-size'),
+            speed3d: document.getElementById('speed-3d-slider'),
+            n: document.getElementById('n-level'), feedback: document.getElementById('feedback'),
+            varEnable: document.getElementById('var-nback-enable'), varMin: document.getElementById('var-nback-min'),
+            interf: document.getElementById('interference-slider')
         };
-        const gridContainer = document.getElementById('grid-container');
-        const inputBar = document.getElementById('input-bar');
+        const stimChecks = { pos: document.getElementById('stim-pos'), col: document.getElementById('stim-col'), aud: document.getElementById('stim-aud'), shp: document.getElementById('stim-shp') };
+        
+        const gridContainer2D = document.getElementById('grid-container-2d');
+        const scene3D = document.getElementById('scene3d');
+        const cube3D = document.getElementById('cube3d');
+        const topArea = document.getElementById('top-stimulus-area');
+        const shapeSvg = document.getElementById('shape-svg');
+        const topWord = document.getElementById('top-word');
+        const sidePanelLeft = document.getElementById('side-panel-left');
+        const sidePanelRight = document.getElementById('side-panel-right');
         const interBlockMsg = document.getElementById('inter-block-msg');
-        const preloadContainer = document.getElementById('preload-container');
-        const voiceSelect = document.getElementById('voice-select');
-        const testVoiceBtn = document.getElementById('test-voice-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-
+        
         // State Variables
-        let n, mode, gridSize, currentBlockTrials, trials = [], currentTrial = 0, sessionInterval, totalTrialsPlayed = 0;
+        let n, gridSize, currentBlockTrials, trials = [], kSeq = [], currentTrial = 0, sessionInterval, totalTrialsPlayed = 0;
         let highestN = 1;
-        let responses = { pos: [], col: [], aud: [] };
+        let responses = { pos: [], col: [], aud: [], shp: [] };
         let globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
-        let isRunning = false;
-        let isTrialActive = false;
-        let isPaused = false;
-        let availableVoices = [];
-        let selectedVoiceURI = null;
+        let isRunning = false, isTrialActive = false, isPaused = false;
+        let availableVoices = [], selectedVoiceURI = null;
+        let activeStimuli = [];
 
         // Timers Variables
-        let cumulativeTrainedMs = 0; // Total active time from past sessions this login
-        let sessionElapsedMs = 0;    // Time for current session
+        let cumulativeTrainedMs = 0;
+        let sessionElapsedMs = 0;
         let sessionLastTick = 0;
 
-        // Keybindings Setup
-        let keys = { pos: 'ArrowLeft', col: 'ArrowUp', aud: 'ArrowRight' };
+        let keys = { pos: 'ArrowLeft', col: 'ArrowUp', aud: 'ArrowRight', shp: 'ArrowDown' };
         let listeningForBind = null;
 
-        // Timers Loop
         setInterval(() => {
             let activeCurrentSessionMs = 0;
-
-            // Calculate current session time
             if (isRunning && !isPaused) {
                 const now = Date.now();
                 sessionElapsedMs += (now - sessionLastTick);
                 sessionLastTick = now;
                 activeCurrentSessionMs = sessionElapsedMs;
-                const sessionMins = Math.floor(sessionElapsedMs / 60000);
-                document.getElementById('session-timer-display').innerText = `${sessionMins} mins`;
+                document.getElementById('session-timer-display').innerText = `${Math.floor(sessionElapsedMs / 60000)} mins`;
             } else if (isRunning && isPaused) {
                 sessionLastTick = Date.now();
                 activeCurrentSessionMs = sessionElapsedMs;
             }
-
-            // Total training time across all sessions since login
             const totalTrainedMins = Math.floor((cumulativeTrainedMs + activeCurrentSessionMs) / 60000);
             document.getElementById('global-timer').innerText = `How much you have trained since you logged in: ${totalTrainedMins} mins`;
         }, 1000);
 
+        // UI Event Listeners for Dynamic Settings
+        inputs.gridType.addEventListener('change', () => {
+            document.getElementById('grid-size-group').style.display = inputs.gridType.value === '2d' ? 'flex' : 'none';
+            document.getElementById('speed-3d-group').style.display = inputs.gridType.value === '3d' ? 'flex' : 'none';
+        });
+
+        inputs.speed3d.addEventListener('input', (e) => {
+            const v = e.target.value;
+            let txt = v < 30 ? "Slow" : v < 70 ? "Normal" : "Fast";
+            document.getElementById('speed-display').innerText = txt;
+        });
+
+        inputs.interf.addEventListener('input', (e) => document.getElementById('interf-display').innerText = e.target.value + '%');
+
+        function updateVarNBackLimits() {
+            let nVal = parseInt(inputs.n.value) || 1;
+            let maxVar = Math.max(1, nVal - 1);
+            inputs.varMin.max = maxVar;
+            if (parseInt(inputs.varMin.value) > maxVar) inputs.varMin.value = maxVar;
+            document.getElementById('var-min-display').innerText = inputs.varMin.value;
+            
+            const opts = document.getElementById('var-nback-options');
+            if(inputs.varEnable.checked) { opts.style.opacity = '1'; inputs.varMin.disabled = false; }
+            else { opts.style.opacity = '0.5'; inputs.varMin.disabled = true; }
+        }
+        inputs.n.addEventListener('input', updateVarNBackLimits);
+        inputs.varEnable.addEventListener('change', updateVarNBackLimits);
+        inputs.varMin.addEventListener('input', () => document.getElementById('var-min-display').innerText = inputs.varMin.value);
+
+        function updateKeybindUI() {
+            const list = document.getElementById('keybind-list');
+            list.innerHTML = '';
+            activeStimuli = ['pos', 'col', 'aud', 'shp'].filter(k => stimChecks[k].checked);
+            
+            if (activeStimuli.length === 0) {
+                stimChecks.pos.checked = true; // Force at least one
+                activeStimuli = ['pos'];
+            }
+
+            document.getElementById('group-voice').style.display = activeStimuli.includes('aud') ? 'flex' : 'none';
+
+            const labels = { pos: 'Position', col: 'Color', aud: 'Audio', shp: 'Shape' };
+            activeStimuli.forEach(stim => {
+                list.innerHTML += `
+                    <div class="keybind-row">
+                        <span>${labels[stim]}</span>
+                        <button class="bind-btn" data-type="${stim}" id="bind-${stim}">${formatKey(keys[stim])}</button>
+                    </div>`;
+            });
+
+            document.querySelectorAll('.bind-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (e.target.id === 'test-voice-btn') return;
+                    if(listeningForBind) {
+                        const oldBtn = document.getElementById(`bind-${listeningForBind}`);
+                        if(oldBtn) oldBtn.classList.remove('listening');
+                        updateKeybindUI();
+                    }
+                    listeningForBind = e.target.dataset.type;
+                    e.target.innerText = 'Press Key...';
+                    e.target.classList.add('listening');
+                });
+            });
+        }
+        
+        Object.values(stimChecks).forEach(chk => chk.addEventListener('change', updateKeybindUI));
+
         function populateVoices() {
             if (typeof speechSynthesis === 'undefined') return;
-            
             const rawVoices = window.speechSynthesis.getVoices();
             if (!rawVoices || rawVoices.length === 0) return;
-
             availableVoices = rawVoices.filter(v => v.lang.startsWith('en'));
             if (availableVoices.length === 0) availableVoices = rawVoices;
-
+            
+            const voiceSelect = document.getElementById('voice-select');
             voiceSelect.innerHTML = '';
             let selectedIndex = -1;
 
@@ -314,44 +565,31 @@
                 const opt = document.createElement('option');
                 opt.value = idx;
                 opt.textContent = `${v.name} (${v.lang})`;
-                
-                // If the user already selected a voice URI, maintain it
                 if (selectedVoiceURI && v.voiceURI === selectedVoiceURI) {
-                    opt.selected = true;
-                    selectedIndex = idx;
-                } else if (!selectedVoiceURI && selectedIndex === -1 && (v.default || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Alex') || v.name.includes('Natural'))) {
-                    opt.selected = true;
-                    selectedIndex = idx;
+                    opt.selected = true; selectedIndex = idx;
+                } else if (!selectedVoiceURI && selectedIndex === -1 && (v.default || v.name.includes('Google') || v.name.includes('Samantha'))) {
+                    opt.selected = true; selectedIndex = idx;
                 }
                 voiceSelect.appendChild(opt);
             });
-
-            if (voiceSelect.value !== "") {
-                selectedVoiceURI = availableVoices[voiceSelect.value]?.voiceURI;
-            }
+            if (voiceSelect.value !== "") selectedVoiceURI = availableVoices[voiceSelect.value]?.voiceURI;
         }
 
-        voiceSelect.addEventListener('change', () => {
-            if (availableVoices[voiceSelect.value]) {
-                selectedVoiceURI = availableVoices[voiceSelect.value].voiceURI;
-            }
+        document.getElementById('voice-select').addEventListener('change', (e) => {
+            if (availableVoices[e.target.value]) selectedVoiceURI = availableVoices[e.target.value].voiceURI;
         });
 
         if (typeof speechSynthesis !== 'undefined') {
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = populateVoices;
-            }
+            if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
             populateVoices();
         }
 
-        testVoiceBtn.addEventListener('click', () => {
+        document.getElementById('test-voice-btn').addEventListener('click', () => {
             window.speechSynthesis.cancel();
-            let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[voiceSelect.value];
+            let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[document.getElementById('voice-select').value];
             if (chosenVoice) {
                 const msg = new SpeechSynthesisUtterance('Triumph');
-                msg.voice = chosenVoice;
-                msg.lang = chosenVoice.lang || 'en-US';
-                msg.rate = 1.1;
+                msg.voice = chosenVoice; msg.rate = 1.1;
                 window.speechSynthesis.speak(msg);
             }
         });
@@ -362,85 +600,55 @@
             return key.length === 1 ? key.toUpperCase() : key;
         }
 
-        function updateKeybindUI() {
-            document.getElementById('bind-pos').innerText = formatKey(keys.pos);
-            document.getElementById('bind-col').innerText = formatKey(keys.col);
-            document.getElementById('bind-aud').innerText = formatKey(keys.aud);
-
-            const m = inputs.mode.value;
-            document.getElementById('row-col').style.display = (m === 'pos_col' || m === 'all') ? 'flex' : 'none';
-            document.getElementById('row-aud').style.display = (m === 'pos_aud' || m === 'all') ? 'flex' : 'none';
-            document.getElementById('group-voice').style.display = (m === 'pos_aud' || m === 'all') ? 'flex' : 'none';
-        }
-
-        document.querySelectorAll('.bind-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (e.target.id === 'test-voice-btn') return;
-                if(listeningForBind) {
-                    document.getElementById(`bind-${listeningForBind}`).classList.remove('listening');
-                    updateKeybindUI();
-                }
-                listeningForBind = e.target.dataset.type;
-                e.target.innerText = 'Press Key...';
-                e.target.classList.add('listening');
-            });
-        });
-
-        // Keyboard support
         document.addEventListener('keydown', (e) => {
             if (listeningForBind) {
                 e.preventDefault();
                 keys[listeningForBind] = e.key;
-                document.getElementById(`bind-${listeningForBind}`).classList.remove('listening');
                 listeningForBind = null;
                 updateKeybindUI();
-                saveSettings();
                 return;
             }
-
             if (!screens.game.classList.contains('active') || !isRunning || !isTrialActive || currentTrial >= currentBlockTrials || isPaused) return;
-            
-            if (e.key === keys.pos && !responses.pos[currentTrial]) processFeedback('pos');
-            if (e.key === keys.col && (mode === 'pos_col' || mode === 'all') && !responses.col[currentTrial]) processFeedback('col');
-            if (e.key === keys.aud && (mode === 'pos_aud' || mode === 'all') && !responses.aud[currentTrial]) processFeedback('aud');
+            activeStimuli.forEach(type => {
+                if (e.key === keys[type] && !responses[type][currentTrial]) processFeedback(type);
+            });
         });
 
-        inputs.mode.addEventListener('change', updateKeybindUI);
-
-        function loadSettings() {
-            const saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
-            if(saved.grid) inputs.grid.value = saved.grid;
-            if(saved.mode) inputs.mode.value = saved.mode;
-            if(saved.n) inputs.n.value = saved.n;
-            if(saved.feedback !== undefined) inputs.feedback.checked = saved.feedback;
-            if(saved.keys) keys = saved.keys;
-            updateKeybindUI();
-        }
-
-        function saveSettings() {
-            localStorage.setItem(STATE_KEY, JSON.stringify({ 
-                grid: inputs.grid.value, mode: inputs.mode.value, 
-                n: inputs.n.value, feedback: inputs.feedback.checked, keys: keys
-            }));
-        }
-
+        // Split buttons into vertical 2-per-side layout with Initials on top
         function buildInputBar() {
-            inputBar.innerHTML = '';
-            const addIndicator = (type, label, key) => {
-                const html = `
+            sidePanelLeft.innerHTML = '';
+            sidePanelRight.innerHTML = '';
+            
+            const initials = { pos: 'P', col: 'C', aud: 'A', shp: 'S' };
+
+            let leftStimuli = [];
+            let rightStimuli = [];
+
+            if (activeStimuli.length === 4) {
+                leftStimuli = activeStimuli.slice(0, 2);
+                rightStimuli = activeStimuli.slice(2);
+            } else if (activeStimuli.length === 3) {
+                leftStimuli = activeStimuli.slice(0, 2);
+                rightStimuli = activeStimuli.slice(2);
+            } else if (activeStimuli.length === 2) {
+                leftStimuli = [activeStimuli[0]];
+                rightStimuli = [activeStimuli[1]];
+            } else {
+                leftStimuli = activeStimuli;
+            }
+
+            function createIndicatorHTML(type) {
+                return `
                     <div class="input-indicator" id="ind-${type}" data-type="${type}">
-                        <span class="indicator-key">${formatKey(key)}</span>
-                        <span class="indicator-label">${label}</span>
+                        <span class="indicator-initial">${initials[type]}</span>
+                        <span class="indicator-key">${formatKey(keys[type])}</span>
                     </div>
                 `;
-                inputBar.insertAdjacentHTML('beforeend', html);
-            };
+            }
 
-            addIndicator('pos', 'Position', keys.pos);
-            if(mode === 'pos_col' || mode === 'all') addIndicator('col', 'Color', keys.col);
-            if(mode === 'pos_aud' || mode === 'all') addIndicator('aud', 'Audio', keys.aud);
+            leftStimuli.forEach(type => sidePanelLeft.insertAdjacentHTML('beforeend', createIndicatorHTML(type)));
+            rightStimuli.forEach(type => sidePanelRight.insertAdjacentHTML('beforeend', createIndicatorHTML(type)));
 
-            // Attach touch and click events for Mobile
             document.querySelectorAll('.input-indicator').forEach(ind => {
                 const triggerFeedback = (e) => {
                     e.preventDefault();
@@ -448,144 +656,195 @@
                     const type = ind.dataset.type;
                     if (!responses[type][currentTrial]) processFeedback(type);
                 };
-                
-                ind.addEventListener('touchstart', triggerFeedback);
+                ind.addEventListener('touchstart', triggerFeedback, { passive: false });
                 ind.addEventListener('mousedown', triggerFeedback);
             });
         }
 
         function setupGrid() {
-            gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            gridContainer.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-            gridContainer.innerHTML = '';
-            for(let i=0; i<gridSize*gridSize; i++) {
-                gridContainer.innerHTML += `
-                    <div class="grid-cell-wrapper">
-                        <div class="circle"></div>
-                        <div class="word-stimulus"></div>
-                    </div>`;
+            gridContainer2D.style.display = 'none';
+            scene3D.style.display = 'none';
+            
+            if (inputs.gridType.value === '3d') {
+                scene3D.style.display = 'flex';
+                cube3D.innerHTML = '';
+                
+                const speedVal = parseInt(inputs.speed3d.value);
+                const duration = 35 - (speedVal / 100) * 32; 
+                cube3D.style.animationDuration = Math.max(3, duration) + 's';
+
+                for(let i=0; i<27; i++) {
+                    let x = ((i % 3) - 1) * 11; 
+                    let y = ((Math.floor(i / 3) % 3) - 1) * 11;
+                    let z = (Math.floor(i / 9) - 1) * 11;
+                    cube3D.innerHTML += `
+                        <div class="minicube" id="target-pos-${i}" style="transform: translate3d(${x}vmin, ${y}vmin, ${z}vmin)">
+                            <div class="mini-face front"></div><div class="mini-face back"></div>
+                            <div class="mini-face right"></div><div class="mini-face left"></div>
+                            <div class="mini-face top"></div><div class="mini-face bottom"></div>
+                        </div>`;
+                }
+            } else {
+                gridContainer2D.style.display = 'grid';
+                gridSize = parseInt(inputs.gridSize.value);
+                gridContainer2D.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+                gridContainer2D.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+                gridContainer2D.innerHTML = '';
+                for(let i=0; i<gridSize*gridSize; i++) {
+                    gridContainer2D.innerHTML += `<div class="grid-cell-wrapper" id="target-pos-${i}"><div class="circle"></div></div>`;
+                }
             }
         }
 
         function startSession() {
             const btn = document.getElementById('start-btn');
-            btn.innerText = "Loading Stimuli...";
-            btn.disabled = true;
-
+            btn.innerText = "Loading..."; btn.disabled = true;
             let loadedCount = 0;
+            const preloadContainer = document.getElementById('preload-container');
             preloadContainer.innerHTML = ''; 
             
             if (FACES.length === 0) return finalizeStart(); 
-
             FACES.forEach(src => {
                 const img = new Image();
                 img.onload = () => handlePreloadDone();
                 img.onerror = () => handlePreloadDone();
-                img.src = src;
-                preloadContainer.appendChild(img);
+                img.src = src; preloadContainer.appendChild(img);
             });
-
             function handlePreloadDone() {
                 loadedCount++;
-                if(loadedCount === FACES.length) {
-                    btn.innerText = "Initialize Session";
-                    btn.disabled = false;
-                    finalizeStart();
-                }
+                if(loadedCount === FACES.length) { btn.innerText = "Initialize Session"; btn.disabled = false; finalizeStart(); }
             }
         }
 
         function finalizeStart() {
             if(document.activeElement) document.activeElement.blur();
-
-            gridSize = parseInt(inputs.grid.value);
-            mode = inputs.mode.value;
             n = parseInt(inputs.n.value);
             highestN = n;
-            saveSettings();
-
-            if (voiceSelect.value !== "" && availableVoices[voiceSelect.value]) {
-                selectedVoiceURI = availableVoices[voiceSelect.value].voiceURI;
-            }
-
             window.speechSynthesis.cancel();
-            let silentMsg = new SpeechSynthesisUtterance('');
-            silentMsg.volume = 0;
-            window.speechSynthesis.speak(silentMsg);
-
+            
             globalStats = { hits: 0, misses: 0, falseAlarms: 0 };
             totalTrialsPlayed = 0;
-            isRunning = true;
-            isTrialActive = false;
-            isPaused = false;
-            pauseBtn.innerText = "Pause";
+            isRunning = true; isTrialActive = false; isPaused = false;
+            document.getElementById('pause-btn').innerText = "Pause";
             
-            // Reset Session Timer
-            sessionElapsedMs = 0;
-            sessionLastTick = Date.now();
+            sessionElapsedMs = 0; sessionLastTick = Date.now();
             document.getElementById('session-timer-display').innerText = `0 mins`;
             
-            setupGrid();
-            buildInputBar();
-            switchScreen('game');
-            startNewBlock();
+            setupGrid(); buildInputBar(); switchScreen('game'); startNewBlock();
         }
 
-        function startNewBlock() {
-            currentBlockTrials = 20 + (n * n); 
-            generateTrials();
-            currentTrial = 0;
-            responses = { 
-                pos: Array(currentBlockTrials).fill(false), 
-                col: Array(currentBlockTrials).fill(false), 
-                aud: Array(currentBlockTrials).fill(false) 
-            };
-            
-            document.getElementById('n-display').innerText = `${n}-Back Level`;
-            document.getElementById('trial-display').innerText = `(Trial 1/${currentBlockTrials})`;
-            
-            clearGrid();
-            gridContainer.style.display = 'none';
-            interBlockMsg.innerText = "Get Ready...";
-            interBlockMsg.style.display = 'block';
-            isTrialActive = false;
-
-            sessionInterval = setTimeout(() => {
-                if(!isRunning || isPaused) return;
-                interBlockMsg.style.display = 'none';
-                gridContainer.style.display = 'grid';
-                runTrial();
-            }, 2000); 
-        }
-
-        function generateSequence(targetCount) {
+        // Re-worked, robust interference logic
+        function generateInterferenceSequence(targetCount, kArray, type) {
             let seq = [];
-            for(let i=0; i<currentBlockTrials; i++) {
-                if(i >= n && Math.random() < 0.3) {
-                    seq.push(seq[i-n]); 
+            const interf = parseInt(inputs.interf.value) / 100; // 0.0 to 1.0
+
+            for (let i = 0; i < currentBlockTrials; i++) {
+                let currentK = kArray[i];
+                let targetVal = (i >= currentK) ? seq[i - currentK] : null;
+
+                // ~33% target rate
+                let isTarget = (i >= currentK) && (Math.random() < 0.33);
+
+                if (isTarget) {
+                    seq.push(targetVal);
                 } else {
-                    let val;
-                    do { val = Math.floor(Math.random() * targetCount); } while (i >= n && val === seq[i-n]);
-                    seq.push(val);
+                    let forbidden = new Set();
+                    if (targetVal !== null) forbidden.add(targetVal);
+
+                    let pickedVal = null;
+
+                    // Generate a lure/interference trial if selected by slider ratio
+                    if (Math.random() < interf) {
+                        let lureCandidates = [];
+                        for (let lookback = 1; lookback <= 4; lookback++) {
+                            if (i - lookback >= 0) {
+                                let candidate = seq[i - lookback];
+                                if (!forbidden.has(candidate)) {
+                                    lureCandidates.push(candidate);
+                                }
+                            }
+                        }
+                        if (lureCandidates.length > 0) {
+                            pickedVal = lureCandidates[Math.floor(Math.random() * lureCandidates.length)];
+                        }
+                    }
+
+                    // Fallback to distinct/random selection if not a lure
+                    if (pickedVal === null) {
+                        let recentToAvoid = new Set(forbidden);
+                        if (interf < 0.5) {
+                            for (let lookback = 1; lookback <= 3; lookback++) {
+                                if (i - lookback >= 0) recentToAvoid.add(seq[i - lookback]);
+                            }
+                        }
+
+                        let available = [];
+                        for (let v = 0; v < targetCount; v++) {
+                            if (!recentToAvoid.has(v)) available.push(v);
+                        }
+
+                        if (available.length === 0) {
+                            for (let v = 0; v < targetCount; v++) {
+                                if (!forbidden.has(v)) available.push(v);
+                            }
+                        }
+
+                        if (available.length === 0) {
+                            available = Array.from({length: targetCount}, (_, idx) => idx);
+                        }
+
+                        pickedVal = available[Math.floor(Math.random() * available.length)];
+                    }
+
+                    seq.push(pickedVal);
                 }
             }
             return seq;
         }
 
-        function generateTrials() {
-            const posSeq = generateSequence(gridSize * gridSize);
-            const colSeq = generateSequence(COLORS.length);
-            const audSeq = generateSequence(WORDS.length);
-            const wordSeq = generateSequence(WORDS.length);
-            const faceSeq = generateSequence(FACES.length);
+        function startNewBlock() {
+            currentBlockTrials = 20 + (n * n); 
+            
+            kSeq = [];
+            let minK = inputs.varEnable.checked ? parseInt(inputs.varMin.value) : n;
+            for(let i=0; i<currentBlockTrials; i++) {
+                if (!inputs.varEnable.checked) { kSeq.push(n); continue; }
+                let maxAllowed = Math.min(i, n);
+                if (maxAllowed < minK) kSeq.push(n);
+                else kSeq.push(Math.floor(Math.random() * (maxAllowed - minK + 1)) + minK);
+            }
+
+            const posCount = inputs.gridType.value === '3d' ? 27 : (parseInt(inputs.gridSize.value) ** 2);
+            const posSeq = generateInterferenceSequence(posCount, kSeq, 'pos');
+            const colSeq = generateInterferenceSequence(COLORS.length, kSeq, 'col');
+            const audSeq = generateInterferenceSequence(WORDS.length, kSeq, 'aud');
+            const shpSeq = generateInterferenceSequence(SHAPES_SVG.length, kSeq, 'shp');
+            const wordSeq = generateInterferenceSequence(WORDS.length, kSeq, 'word');
+            const faceSeq = generateInterferenceSequence(FACES.length, kSeq, 'face');
 
             trials = [];
             for(let i=0; i<currentBlockTrials; i++) {
                 trials.push({
-                    pos: posSeq[i], col: colSeq[i], aud: audSeq[i],
+                    pos: posSeq[i], col: colSeq[i], aud: audSeq[i], shp: shpSeq[i],
                     face: FACES[faceSeq[i]], word: WORDS[wordSeq[i]], audWord: WORDS[audSeq[i]]
                 });
             }
+
+            currentTrial = 0;
+            responses = { pos: Array(currentBlockTrials).fill(false), col: Array(currentBlockTrials).fill(false), aud: Array(currentBlockTrials).fill(false), shp: Array(currentBlockTrials).fill(false) };
+            
+            document.getElementById('n-display').innerText = inputs.varEnable.checked ? `Variable N-Back` : `${n}-Back Level`;
+            document.getElementById('n-display').style.color = 'var(--text-color)';
+            
+            clearGrid();
+            interBlockMsg.innerText = "Get Ready..."; interBlockMsg.style.display = 'block';
+            isTrialActive = false;
+
+            sessionInterval = setTimeout(() => {
+                if(!isRunning || isPaused) return;
+                interBlockMsg.style.display = 'none';
+                runTrial();
+            }, 2000); 
         }
 
         function flashIndicator(type, status) {
@@ -593,121 +852,130 @@
             if(indicator) {
                 indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral');
                 void indicator.offsetWidth;
-                
                 if (status === true) indicator.classList.add('flash-correct');
                 else if (status === false) indicator.classList.add('flash-wrong');
                 else indicator.classList.add('flash-neutral');
-                
-                setTimeout(() => {
-                    indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral');
-                }, 300);
+                setTimeout(() => indicator.classList.remove('flash-correct', 'flash-wrong', 'flash-neutral'), 300);
             }
+        }
+
+        function clearGrid() {
+            if (inputs.gridType.value === '3d') {
+                document.querySelectorAll('.mini-face').forEach(f => f.innerHTML = '');
+            } else {
+                document.querySelectorAll('.grid-cell-wrapper .circle').forEach(c => c.innerHTML = '');
+            }
+            
+            topArea.style.visibility = 'hidden';
+            document.getElementById('variable-k-indicator').innerText = '';
         }
 
         function runTrial() {
             if(!isRunning || isPaused) return;
-
             if(currentTrial >= currentBlockTrials) {
                 evaluateBlock();
                 if(isRunning && !isPaused) startNewBlock();
                 return;
             }
 
+            let activeK = kSeq[currentTrial];
             document.getElementById('trial-display').innerText = `(Trial ${currentTrial + 1}/${currentBlockTrials})`;
             
-            clearGrid();
-            
-            if (!responses.pos[currentTrial] && !responses.col[currentTrial] && !responses.aud[currentTrial]) {
-                totalTrialsPlayed++;
+            if (inputs.varEnable.checked) {
+                const nDisp = document.getElementById('n-display');
+                if (currentTrial >= activeK) {
+                    nDisp.innerText = `Match ${activeK}-Back`;
+                    nDisp.style.color = 'var(--highlight)';
+                } else {
+                    nDisp.innerText = `Memorize`;
+                    nDisp.style.color = 'var(--text-color)';
+                }
             }
-            
+
+            clearGrid();
+            if (!activeStimuli.some(t => responses[t][currentTrial])) totalTrialsPlayed++;
             isTrialActive = true;
             
             const trial = trials[currentTrial];
-            const wrapper = gridContainer.children[trial.pos];
-            const circle = wrapper.querySelector('.circle');
-            const textRow = wrapper.querySelector('.word-stimulus');
             
-            circle.innerHTML = `<img src="${trial.face}" class="face-img" alt="face" onerror="this.style.display='none'">`;
-
-            if(mode === 'pos_col' || mode === 'all') {
-                textRow.innerText = trial.word;
-                textRow.style.color = COLORS[trial.col];
+            if (activeStimuli.includes('pos')) {
+                const targetEl = document.getElementById(`target-pos-${trial.pos}`);
+                const imgHTML = `<img src="${trial.face}" class="face-img" alt="face" onerror="this.style.display='none'">`;
+                if (inputs.gridType.value === '3d' && targetEl) {
+                    targetEl.querySelectorAll('.mini-face').forEach(f => f.innerHTML = imgHTML);
+                } else if (targetEl) {
+                    targetEl.querySelector('.circle').innerHTML = imgHTML;
+                }
             }
 
-            if(mode === 'pos_aud' || mode === 'all') {
+            if (activeStimuli.includes('col') || activeStimuli.includes('shp') || activeStimuli.includes('aud')) {
+                topArea.style.visibility = 'visible';
+                topWord.innerText = trial.word;
+                
+                let fillColor = activeStimuli.includes('col') ? COLORS[trial.col] : 'rgba(255, 255, 255, 0.08)';
+                let strokeColor = activeStimuli.includes('col') ? COLORS[trial.col] : '#8e8e93';
+
+                if (activeStimuli.includes('shp')) {
+                    let svgTemplate = SHAPES_SVG[trial.shp];
+                    shapeSvg.innerHTML = svgTemplate.replace(/FILL_COLOR/g, fillColor).replace(/STROKE_COLOR/g, strokeColor);
+                } else if (activeStimuli.includes('col')) {
+                    shapeSvg.innerHTML = `<rect x="8" y="8" width="84" height="84" rx="16" fill="${fillColor}" stroke="${strokeColor}" stroke-width="4"/>`;
+                } else {
+                    shapeSvg.innerHTML = ''; 
+                }
+
+                topWord.style.color = '#ffffff';
+            }
+
+            if (inputs.varEnable.checked) {
+                document.getElementById('variable-k-indicator').innerText = `${activeK}-Back`;
+            }
+
+            if(activeStimuli.includes('aud')) {
                 window.speechSynthesis.cancel();
                 const msg = new SpeechSynthesisUtterance(trial.audWord);
-                
-                let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[voiceSelect.value];
-                if (chosenVoice) {
-                    msg.voice = chosenVoice;
-                    msg.lang = chosenVoice.lang || 'en-US';
-                } else {
-                    msg.lang = 'en-US';
-                }
-                msg.rate = 1.1;
-                window.speechSynthesis.speak(msg);
+                let chosenVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || availableVoices[document.getElementById('voice-select').value];
+                if (chosenVoice) { msg.voice = chosenVoice; msg.lang = chosenVoice.lang || 'en-US'; }
+                msg.rate = 1.1; window.speechSynthesis.speak(msg);
             }
 
             sessionInterval = setTimeout(() => {
                 if(!isRunning || isPaused) return;
-                
                 clearGrid();
+                if (inputs.varEnable.checked) document.getElementById('n-display').style.color = 'var(--text-color)';
                 
                 sessionInterval = setTimeout(() => {
                     if(!isRunning || isPaused) return;
-                    
-                    if(inputs.feedback.checked && currentTrial >= n) {
-                        const activeTypes = ['pos'];
-                        if(mode === 'pos_col' || mode === 'all') activeTypes.push('col');
-                        if(mode === 'pos_aud' || mode === 'all') activeTypes.push('aud');
-
-                        activeTypes.forEach(type => {
-                            const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
-                            const responded = responses[type][currentTrial];
-                            
-                            if (isTarget && !responded) {
-                                flashIndicator(type, false);
-                            }
+                    if(inputs.feedback.checked && currentTrial >= activeK) {
+                        activeStimuli.forEach(type => {
+                            const isTarget = trials[currentTrial][type] === trials[currentTrial - activeK][type];
+                            if (isTarget && !responses[type][currentTrial]) flashIndicator(type, false);
                         });
                     }
-
-                    currentTrial++; 
-                    runTrial();     
+                    currentTrial++; runTrial();     
                 }, ISI);
             }, STIMULUS_DURATION);
         }
 
-        function clearGrid() {
-            Array.from(gridContainer.children).forEach(wrapper => {
-                wrapper.querySelector('.circle').innerHTML = '';
-                wrapper.querySelector('.word-stimulus').innerText = '';
-            });
-        }
-
         function processFeedback(type) {
             responses[type][currentTrial] = true;
+            let activeK = kSeq[currentTrial];
             
-            if(!inputs.feedback.checked || currentTrial < n) {
-                flashIndicator(type, 'neutral');
-                return; 
+            if(!inputs.feedback.checked || currentTrial < activeK) {
+                flashIndicator(type, 'neutral'); return; 
             }
-            
-            const isTarget = trials[currentTrial][type] === trials[currentTrial-n][type];
+            const isTarget = trials[currentTrial][type] === trials[currentTrial - activeK][type];
             flashIndicator(type, isTarget);
         }
 
         function calculateBlockAccuracy() {
             let blockHits = 0, blockMisses = 0, blockFA = 0;
-            
-            const types = ['pos'];
-            if(mode === 'pos_col' || mode === 'all') types.push('col');
-            if(mode === 'pos_aud' || mode === 'all') types.push('aud');
-
-            types.forEach(type => {
-                for(let i=n; i<currentBlockTrials; i++) {
-                    const isTarget = trials[i][type] === trials[i-n][type];
+            activeStimuli.forEach(type => {
+                for(let i=0; i<currentBlockTrials; i++) {
+                    let activeK = kSeq[i];
+                    if (i < activeK) continue;
+                    
+                    const isTarget = trials[i][type] === trials[i - activeK][type];
                     const responded = responses[type][i];
                     
                     if(isTarget && responded) { blockHits++; globalStats.hits++; }
@@ -715,7 +983,6 @@
                     if(!isTarget && responded) { blockFA++; globalStats.falseAlarms++; }
                 }
             });
-
             const targets = blockHits + blockMisses;
             if(targets === 0) return 100;
             return (blockHits / (blockHits + blockFA + blockMisses)) * 100 || 0;
@@ -723,89 +990,63 @@
 
         function evaluateBlock() {
             const avgAcc = calculateBlockAccuracy();
-            
             if(avgAcc >= 80) {
-                n++;
-                if(n > highestN) highestN = n;
+                n++; if(n > highestN) highestN = n;
             } else if(avgAcc < 50 && n > 1) {
                 n--;
             }
             inputs.n.value = n; 
-            saveSettings();
+            updateVarNBackLimits();
         }
 
-        // Pause / Resume Logic
-        pauseBtn.addEventListener('click', () => {
+        document.getElementById('pause-btn').addEventListener('click', () => {
             if (!isRunning) return;
-
             if (!isPaused) {
-                isPaused = true;
-                clearTimeout(sessionInterval);
-                window.speechSynthesis.cancel();
-                pauseBtn.innerText = "Resume";
-                gridContainer.style.display = 'none';
-                interBlockMsg.innerText = "PAUSED";
-                interBlockMsg.style.display = 'block';
+                isPaused = true; clearTimeout(sessionInterval); window.speechSynthesis.cancel();
+                document.getElementById('pause-btn').innerText = "Resume";
+                clearGrid();
+                interBlockMsg.innerText = "PAUSED"; interBlockMsg.style.display = 'block';
             } else {
-                isPaused = false;
-                pauseBtn.innerText = "Pause";
+                isPaused = false; document.getElementById('pause-btn').innerText = "Pause";
                 interBlockMsg.innerText = "Resuming...";
-                
-                if (responses.pos[currentTrial]) responses.pos[currentTrial] = false;
-                if (responses.col[currentTrial]) responses.col[currentTrial] = false;
-                if (responses.aud[currentTrial]) responses.aud[currentTrial] = false;
-                
+                activeStimuli.forEach(t => { if (responses[t][currentTrial]) responses[t][currentTrial] = false; });
                 setTimeout(() => {
                     if (!isRunning || isPaused) return;
-                    interBlockMsg.style.display = 'none';
-                    gridContainer.style.display = 'grid';
-                    runTrial(); 
+                    interBlockMsg.style.display = 'none'; runTrial(); 
                 }, 1200);
             }
             if(document.activeElement) document.activeElement.blur();
         });
 
-        function forceEndSession() {
-            isRunning = false;
-            isTrialActive = false;
-            isPaused = false;
-            clearTimeout(sessionInterval);
-            window.speechSynthesis.cancel();
-            
+        document.getElementById('end-session-btn').addEventListener('click', () => {
+            isRunning = false; isTrialActive = false; isPaused = false;
+            clearTimeout(sessionInterval); window.speechSynthesis.cancel();
             calculateBlockAccuracy();
-
-            // Store accumulated session time into total trained time
             cumulativeTrainedMs += sessionElapsedMs;
 
             let totalAcc = 0;
             const totalTargets = globalStats.hits + globalStats.misses;
-            if(totalTargets > 0) {
-                totalAcc = (globalStats.hits / (globalStats.hits + globalStats.falseAlarms + globalStats.misses)) * 100;
-            }
+            if(totalTargets > 0) totalAcc = (globalStats.hits / (globalStats.hits + globalStats.falseAlarms + globalStats.misses)) * 100;
             
-            const finalMins = Math.floor(sessionElapsedMs / 60000);
-
             document.getElementById('results-text').innerHTML = `
-                <p>Time Elapsed<br><strong>${finalMins} minutes</strong></p>
+                <p>Time Elapsed<br><strong>${Math.floor(sessionElapsedMs / 60000)} minutes</strong></p>
                 <p style="margin-top: 1.5rem">Trials Completed<br><strong>${totalTrialsPlayed}</strong></p>
                 <p style="margin-top: 1.5rem">Highest Level<strong class="stat-highlight">${highestN}-Back</strong></p>
-                <p style="margin-top: 1.5rem">Overall Accuracy<strong class="stat-highlight">${Math.round(totalAcc)}%</strong></p>
-            `;
-            
-            sessionElapsedMs = 0;
-            switchScreen('results');
-        }
+                <p style="margin-top: 1.5rem">Overall Accuracy<strong class="stat-highlight">${Math.round(totalAcc)}%</strong></p>`;
+            sessionElapsedMs = 0; switchScreen('results');
+        });
 
         function switchScreen(id) {
-            Object.values(screens).forEach(s => { s.classList.remove('active'); });
+            Object.values(screens).forEach(s => s.classList.remove('active'));
             screens[id].classList.add('active');
         }
 
         document.getElementById('start-btn').addEventListener('click', startSession);
-        document.getElementById('end-session-btn').addEventListener('click', forceEndSession);
         document.getElementById('home-btn').addEventListener('click', () => switchScreen('setup'));
 
-        loadSettings();
+        updateKeybindUI();
+        updateVarNBackLimits();
+        inputs.gridType.dispatchEvent(new Event('change'));
     </script>
 </body>
 </html>
